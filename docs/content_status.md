@@ -11,7 +11,7 @@
 
 | Keyword | Search Intent | 등급(QA policy) | Evidence | Draft | QA(Tech/SEO/EN) | Human Approval | Publish | 파일 |
 |---|---|---|---|---|---|---|---|---|
-| numbers stored as text bulk convert | How-to / Task | Simple Task | 완료 (1회 재현, PASS) | 완료 | PASS/PASS/PASS (Pilot 단계에서 완료) | 승인 (FULL GO에 포함) | 미발행 | `content/pilot_F_numbers_as_text.md` |
+| numbers stored as text bulk convert | How-to / Task | Simple Task | 완료 — Pilot F 재현 + 신규 fixture(`fixtures/numbers-stored-as-text-bulk-convert_fixture.xlsx`, 5개 method별 시트, NBSP 실제 문자 포함)로 보강. 스크린샷은 미확보(비차단, 실제 발행 전 필요) | 완료 — 운영 Draft로 전환 (`content/numbers-stored-as-text-bulk-convert.md`) | PASS/PASS/PASS (QA 패키지: `content/numbers-stored-as-text-bulk-convert_qa.md`) | 요청됨 — 이번 운영 전환분은 Pilot 단계의 포괄 승인과 별개로 개별 승인 대기 (CONTENT READY FOR HUMAN APPROVAL) | 미발행 | `content/numbers-stored-as-text-bulk-convert.md` (구 `content/pilot_F_numbers_as_text.md`는 원본 보존용으로 유지) |
 | remove blank rows without breaking formulas | Troubleshooting / Fix | Edge-case Guide | 완료 (fixture 결함 2건 수정 후 재현, PASS) | 완료 | PASS/PASS/PASS (Pilot 단계에서 완료) | 승인 (FULL GO에 포함) | 미발행 | `content/pilot_G_remove_blank_rows.md` |
 | power query remove duplicates (integrated guide) | Integrated / Reference guide | High-risk Integrated Guide | 완료 (Pilot A, 다중 fixture·독립검증) | 완료 (Pilot 단계 원고) | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 (Claude Project 로그에 원고 있음) |
 | excel split comma separated values into rows | Comparison / Method choice | High-risk Integrated Guide | 완료 (Pilot B) | 완료 (Pilot 단계 원고) | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 |
