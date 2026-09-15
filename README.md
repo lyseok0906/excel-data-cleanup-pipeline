@@ -27,14 +27,22 @@ Excel Data Cleanup & Transformation 니치 블로그의 콘텐츠·QA 파이프�
 
 ```
 docs/
-  qa_policy.md          — 3단계 검증 강도 운영모델
-  pilot_results.md       — Pilot A~G 결과 요약 (상세 원본은 Claude Project 결정 로그)
+  content_operations_playbook.md — 콘텐츠 운영 규칙 정본 (Keyword→Publish 전체 파이프라인, QA 체크리스트, commit 규칙)
+  content_status.md              — 키워드별 진행 상태 추적표
+  qa_policy.md                   — 3단계 검증 강도 운영모델 + Excel 버전 정책
+  pilot_results.md               — Pilot A~G 결과 요약 (상세 원본은 Claude Project 결정 로그)
 content/
   pilot_F_numbers_as_text.md
   pilot_G_remove_blank_rows.md
 fixtures/
   pilot_FG_fixture_v2.xlsx
+evidence/
+  (재현 스크린샷 등 필요 시 키워드별 하위 폴더 생성 — docs/content_operations_playbook.md §5 참고)
 ```
+
+## 콘텐츠 운영 규칙
+
+새 원고를 조사·작성·발행하는 전체 절차(공식 출처 우선순위, 재현 필요/불필요 구분, QA 3종 체크리스트, Human Approval, commit/파일명 규칙)는 [`docs/content_operations_playbook.md`](docs/content_operations_playbook.md)에 정리되어 있다. 실제 Publish는 이 문서의 절차를 따르되 항상 사용자가 직접 실행한다.
 
 ## 참고
 
