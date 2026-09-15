@@ -1,5 +1,5 @@
 ---
-title: "How to Convert Numbers Stored as Text to Real Numbers in Excel (Bulk Fix, 4 Methods)"
+title: "How to Convert Numbers Stored as Text in Excel (4 Bulk Methods)"
 slug: "numbers-stored-as-text-bulk-convert"
 meta_description: "Fix numbers stored as text in Excel with 4 reliable bulk methods: Convert to Number, Paste Special Multiply, VALUE(), and Text to Columns — plus the hidden non-breaking-space case."
 category: "Data Cleanup"
@@ -10,11 +10,11 @@ internal_link_candidates:
 status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL"
 ---
 
-# How to Convert Numbers Stored as Text to Real Numbers in Excel (Bulk Fix)
+# How to Convert Numbers Stored as Text in Excel (4 Bulk Methods)
 
 If a column of numbers is left-aligned, shows a small green triangle in the corner of each cell, or calculations such as `SUM` ignore the values, Excel may be treating those values as text rather than numbers. This is common after importing data from CSV files, databases, or copy-pasting from a website.
 
-Here are four ways to fix it in bulk, plus one hidden-character case that can make all four look like they "failed."
+Here are four ways to fix it in bulk, plus a hidden-character case that can make a value look like it's still text after you've tried one of them.
 
 **Applies to:** Excel for Microsoft 365, Excel 2024, Excel 2021, Excel 2019, and Excel 2016. All four methods below use only long-standing Excel features (no new dynamic-array functions), so they work the same way across every version in this list.
 
@@ -65,17 +65,17 @@ Use this method carefully if the source contains leading zeros, long identifiers
 
 ## If Conversion Still Fails, Check for Hidden Characters
 
-A value can look numeric while still containing spaces or imported nonprinting characters — most often a **non-breaking space (NBSP, U+00A0)** left over from a web copy-paste or an export from another system. When this happens, all four methods above will appear to do nothing, because Excel still sees a text string, not a clean number.
+A value can look numeric while still containing a hidden character, such as a non-breaking space (NBSP, Unicode character 160) left over from a web copy-paste or an export from another system. When a value contains one, the methods above may not convert it, because Excel still sees a text string rather than a clean number.
 
-For ordinary leading/trailing spaces and low ASCII control characters, `TRIM` and `CLEAN` can help. A non-breaking space is different: `CLEAN` does not reliably remove it, and `TRIM` is designed around ordinary spaces (U+0020), not NBSP.
+`TRIM` removes ordinary spaces (the character you get from pressing the spacebar, code 32) and collapses multiple spaces between words down to one — but by itself it does not remove the non-breaking space character. `CLEAN` removes the first 32 nonprinting ASCII control characters (codes 0–31); the non-breaking space falls outside that range, so `CLEAN` does not address it either. In other words, `TRIM` and `CLEAN` are each scoped to a different kind of unwanted character, and neither is designed to target a literal U+00A0.
 
-For the non-breaking-space case, use `UNICHAR(160)` explicitly, for example:
+To target the non-breaking space specifically, use `UNICHAR(160)`, which returns the Unicode character for code point 160 — the non-breaking space — so it can be matched and replaced explicitly:
 
 ```excel
 =VALUE(TRIM(SUBSTITUTE(CLEAN(A2),UNICHAR(160)," ")))
 ```
 
-Use `UNICHAR(160)`, not `CHAR(160)`: `CHAR(160)` can return the ANSI space (character code 32) instead of a true non-breaking space (160) under some non-Western Windows locale/code-page combinations, which would make the `SUBSTITUTE` step silently do nothing. `UNICHAR` always refers to the Unicode code point, so it behaves the same regardless of your Windows locale.
+This formula uses `CLEAN` to strip ordinary control characters, `SUBSTITUTE` with `UNICHAR(160)` to swap the literal non-breaking space for a regular space, `TRIM` to clean up the result, and `VALUE` to convert the cleaned text into a number.
 
 ## Which Version of Excel Do You Need?
 
@@ -83,4 +83,14 @@ All five techniques in this article — the four bulk-conversion methods and the
 
 ## One-line Summary
 
-For a quick one-time fix, use **Convert to Number** or **Paste Special > Multiply**. For mixed imported data, use a helper formula such as `VALUE()` so you can see which rows converted successfully before replacing the source values. If none of these work, check for a hidden non-breaking space and use the `UNICHAR(160)` formula above.
+For a quick one-time fix, use **Convert to Number** or **Paste Special > Multiply**. For mixed imported data, use a helper formula such as `VALUE()` so you can see which rows converted successfully before replacing the source values. If a value still won't convert, check for a hidden non-breaking space and use the `UNICHAR(160)` formula above.
+
+## Sources
+
+- [Convert numbers stored as text to numbers in Excel](https://support.microsoft.com/en-us/office/convert-numbers-stored-as-text-to-numbers-in-excel-40105f2a-fe79-4477-a171-c5bad0f0a885) — Microsoft Support. Backs Method 1 (error-checking indicator, Convert to Number) and Method 3 (`VALUE` as a helper-column method).
+- [Fix text-formatted numbers by applying a number format](https://support.microsoft.com/en-us/office/fix-text-formatted-numbers-by-applying-a-number-format-6599c03a-954d-4d83-b78a-23af2c8845d0) — Microsoft Support. Backs Method 2 (Paste Special with Multiply).
+- [VALUE function](https://support.microsoft.com/en-us/office/value-function-257d0108-07dc-437d-ae1c-bc2d3953d8c2) — Microsoft Support. Reference for the `VALUE` function used in Method 3 and in the hidden-character formula.
+- [TRIM function](https://support.microsoft.com/en-us/office/trim-function-410388fa-c5df-49c6-b16c-9e5630b479f9) — Microsoft Support. Explicitly documents the non-breaking space (decimal 160) and states that TRIM alone does not remove it — the basis for the "Check for Hidden Characters" section.
+- [CLEAN function](https://support.microsoft.com/en-us/excel/functions/clean-function) — Microsoft Support. Documents that CLEAN removes only the first 32 nonprinting ASCII control characters, which do not include the non-breaking space.
+- [UNICHAR function](https://support.microsoft.com/en-us/office/unichar-function-ffeb64f5-f131-44c6-b332-5cd72f0659b8) — Microsoft Support. Reference for `UNICHAR`, which returns the Unicode character for a given code point (160 for the non-breaking space).
+- [Split text into different columns with the Convert Text to Columns Wizard](https://support.microsoft.com/en-us/office/split-text-into-different-columns-with-the-convert-text-to-columns-wizard-30b14928-5550-41f5-97ca-7a3e9c363ed7) — Microsoft Support. General reference for the Text to Columns wizard used in Method 4. **Note:** this page does not document the specific behavior of "General" format reinterpreting text-stored numbers — that claim rests on this project's own reproduction in Excel (recorded separately in the project's QA package), not on this official page.
