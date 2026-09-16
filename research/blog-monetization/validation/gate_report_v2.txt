@@ -1,0 +1,50 @@
+=== Row count: 10 ===
+
+--- 1. Enum validation ---
+PASS: all boolean/evidence/enum fields (incl. traffic_scope, contrast_pattern) use only allowed values.
+
+--- 2. Mixed value+evidence in single cell check ---
+PASS: no mixed value+evidence strings found.
+
+--- 3. Duplicate canonical_root_domain check ---
+PASS: all 10 domains unique.
+
+--- 4. Provenance / source_url validation (all evidence-bearing fields) ---
+PASS: every field carrying A or B evidence has a source URL present (dedicated _source_url column or explicit URL in _note).
+
+--- 5. Date-format validation ---
+PASS: all traffic_research_date / revenue_research_date cells are clean ISO (YYYY-MM-DD) or explicit UNKNOWN -- no descriptive text baked into date fields.
+Note: traffic_source_period / revenue_figure_period / traffic_value_raw_period are free-text PERIOD descriptors by design, kept separate from the ISO research_date fields above -- this is the fix for the prior 'descriptive text in date field' problem.
+
+--- 6. UNKNOWN value implies UNKNOWN evidence (Rule #8) ---
+PASS: every UNKNOWN-valued field carries UNKNOWN evidence (2 pre-existing violations from validation_10.csv -- fortelabs.com/affiliate and asianefficiency.com/affiliate -- were corrected during migration).
+
+--- 7. traffic_scope / traffic_tier consistency check (Section 4-1 rule) ---
+traffic_scope distribution: {'CONTENT_ONLY': 8, 'WHOLE_DOMAIN_INCLUDES_PRODUCT': 1, 'UNKNOWN': 1}
+PASS: traffic_tier correctly forced to UNKNOWN wherever traffic_scope is WHOLE_DOMAIN_INCLUDES_PRODUCT or UNKNOWN, and raw traffic values remain preserved (not deleted).
+Sites flagged as whole-domain (excluded from content-level traffic_tier comparisons, raw value retained): ['zapier.com']
+
+--- 8. contrast_pattern structure check ---
+  43folders.com: contrast_pattern=shutdown, evidence_period='cadence_drop documented from ~Sept 2008; full domain shutdown/parking directly c...'
+  zenhabits.net: contrast_pattern=traffic_decline, evidence_period='trailing 3 months ending ~August/September 2026 (Similarweb: global rank worsene...'
+
+--- 9. Dimension-independence check (sampling_stratum vs traffic_tier vs is_niche_authority) ---
+  thomasjfrank.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=N | is_contrast_case=N
+  zapier.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  asianefficiency.com: stratum=Large/Traffic Leader | traffic_tier=LOW | is_niche_authority=N | is_contrast_case=N
+  nesslabs.com: stratum=Mid-scale Active Site | traffic_tier=MID | is_niche_authority=N | is_contrast_case=N
+  keepproductive.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  fortelabs.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  zettelkasten.de: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  linkingyourthinking.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  43folders.com: stratum=Contrast Cohort | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=Y
+  zenhabits.net: stratum=Contrast Cohort | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=Y
+Example of dimension mismatch surfaced (stratum=Large/Traffic Leader but traffic_tier=LOW): ['asianefficiency.com']
+
+--- 10. Denominator automation test ---
+  affiliate: 2 of 6 confirmed = Y (direct column filter, no parsing)
+  display_ads: 0 of 9 confirmed = Y (direct column filter, no parsing)
+  own_product: 9 of 10 confirmed = Y (direct column filter, no parsing)
+  is_niche_authority: 5 of 10 confirmed = Y (direct column filter, no parsing)
+  is_contrast_case: 2 of 10 confirmed = Y (direct column filter, no parsing)
+PASS: denominators computable via direct column filter across all migrated fields.
