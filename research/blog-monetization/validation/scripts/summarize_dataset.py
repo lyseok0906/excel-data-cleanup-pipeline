@@ -68,11 +68,24 @@ def section_row_count(rows, lines):
 
 
 def section_category_distribution(rows, lines):
-    lines.append("## Category distribution (primary_niche)")
-    c = Counter(r.get("primary_niche", UNKNOWN) for r in rows)
+    # GPT follow-up to commit 8dffb08 (2026-09-17): this must aggregate the
+    # actual `category` field (a closed enum -- see schema_extend.py), not
+    # `primary_niche` (a free-text detail field with one distinct value per
+    # row, which is not a meaningful "distribution"). primary_niche detail
+    # is reported separately below for reference only.
+    lines.append("## Category distribution (category field, closed enum)")
+    c = Counter(r.get("category", UNKNOWN) for r in rows)
     for k, v in sorted(c.items(), key=lambda kv: (-kv[1], kv[0])):
         lines.append(f"  {k}: {v} ({pct(v, len(rows))})")
     lines.append(f"  TOTAL: {sum(c.values())} (must equal row count {len(rows)})")
+    lines.append("")
+    lines.append("## primary_niche detail (free-text, reference only -- not a category distribution)")
+    niche_counts = Counter(r.get("primary_niche", UNKNOWN) for r in rows)
+    n_unique = len(niche_counts)
+    n_singletons = sum(1 for v in niche_counts.values() if v == 1)
+    lines.append(f"  {n_unique} distinct primary_niche values across {len(rows)} rows "
+                 f"({n_singletons} of them unique to a single row) -- this field is per-site free text, "
+                 f"not a taxonomy; see the category distribution above for the actual closed-enum grouping.")
     lines.append("")
 
 

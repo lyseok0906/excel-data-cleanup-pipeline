@@ -6,58 +6,16 @@ arithmetic is performed anywhere in this report.
 
 Row count: 50
 
-## Category distribution (primary_niche)
-  Baby gear/products reviews (car seats, strollers, carriers, etc.): 1 (2.0%)
-  Broad consumer product/software buying guides (antivirus, VPN, home security, appliances, etc.): 1 (2.0%)
-  DIY furniture building plans: 1 (2.0%)
-  Dividend growth investing strategy (narrow investing sub-methodology): 1 (2.0%)
-  Early retirement/FIRE, real estate, investing, career negotiation: 1 (2.0%)
-  Excel Q&A forum, tips, and books (Bill Jelen / "Mr. Excel"): 1 (2.0%)
-  Excel templates/tips resource; historically associated with Excel author John Walkenbach: 1 (2.0%)
-  Excel/VBA community Q&A forum: 1 (2.0%)
-  Excel/VBA help, forum, templates, consulting: 1 (2.0%)
-  Extreme frugality + FIRE, homesteading lifestyle: 1 (2.0%)
-  FIRE / early retirement, portfolio performance tracking: 1 (2.0%)
-  Food journalism/recipes/food science: 1 (2.0%)
-  Free Excel tutorial site (beginner-to-intermediate): 1 (2.0%)
-  General gadget/tech product reviews: 1 (2.0%)
-  General personal finance, budgeting, debt payoff: 1 (2.0%)
-  General personal finance/budgeting, blogging-business commentary: 1 (2.0%)
-  General personal finance/consumer finance commentary: 1 (2.0%)
-  Getting Things Done (GTD) methodology, productivity/attention essays (historic): 1 (2.0%)
-  Habit formation and simple living, with productivity/GTD roots (early archive): 1 (2.0%)
-  Home coffee brewing equipment & bean reviews (espresso machines, grinders, brewers): 1 (2.0%)
-  Home decor/organization media: 1 (2.0%)
-  Home-cooking/family recipes: 1 (2.0%)
-  Interior design/DIY blog (defunct): 1 (2.0%)
-  Lifestyle/gear reviews (watches, outdoors, cars, tech, style): 1 (2.0%)
-  Meta-review aggregator (compiled/synthesized reviews across ~250 product categories): 1 (2.0%)
-  Military/veteran personal finance and benefits: 1 (2.0%)
-  Millionaire wealth-building interviews, FI through "Earn-Save-Invest" framework: 1 (2.0%)
-  Mindful productivity, neuroscience-informed personal knowledge management, learning systems: 1 (2.0%)
-  Narrow niche authority for Google Sheets and Google Apps Script: 1 (2.0%)
-  Narrow niche authority for Power Pivot, DAX, and Power BI-in-Excel: 1 (2.0%)
-  Narrow niche authority for advanced pure-worksheet-formula techniques in Excel (deliberately VBA-free): 1 (2.0%)
-  Notion productivity systems, tutorials, templates: 1 (2.0%)
-  Notion/productivity app reviews and tutorials, YouTube-linked content: 1 (2.0%)
-  Obsidian-based personal knowledge management method ('LYT'), note-linking systems: 1 (2.0%)
-  PARA Method and 'Building a Second Brain' personal knowledge management methodology: 1 (2.0%)
-  Personal finance for physicians/medical professionals: 1 (2.0%)
-  Productivity/automation software tutorials, app comparisons, workflow guides (incl. Notion/Todoist/task-management roundups): 1 (2.0%)
-  Robot/vacuum cleaner reviews: 1 (2.0%)
-  Running shoe reviews (lab + wear-testing): 1 (2.0%)
-  SaaS company blog -- live data connector for Excel/Google Sheets; content covers spreadsheet/BI best practices: 1 (2.0%)
-  Sourdough baking (technique/science): 1 (2.0%)
-  Tech product reviews & buying guides: 1 (2.0%)
-  Tech product reviews & buying guides (broad consumer electronics/software): 1 (2.0%)
-  Time management, productivity systems, task management coaching: 1 (2.0%)
-  Tiny house movement (curation/news): 1 (2.0%)
-  VBA/macro automation tutorials, formula guides, own add-in products: 1 (2.0%)
-  Vegetarian recipes: 1 (2.0%)
-  Vegetarian/whole-foods recipes: 1 (2.0%)
-  Woodworking instruction/video: 1 (2.0%)
-  Zettelkasten note-taking method, 'The Archive' note-taking app: 1 (2.0%)
+## Category distribution (category field, closed enum)
+  Excel / Spreadsheet: 10 (20.0%)
+  Home / DIY & Food: 10 (20.0%)
+  Personal Finance: 10 (20.0%)
+  Product Review / Buying Guides: 10 (20.0%)
+  Productivity / PKM: 10 (20.0%)
   TOTAL: 50 (must equal row count 50)
+
+## primary_niche detail (free-text, reference only -- not a category distribution)
+  50 distinct primary_niche values across 50 rows (50 of them unique to a single row) -- this field is per-site free text, not a taxonomy; see the category distribution above for the actual closed-enum grouping.
 
 ## sampling_stratum distribution
   Narrow Niche Authority: 15 (30.0%)
@@ -90,10 +48,10 @@ Row count: 50
   is_niche_authority: 1/50 UNKNOWN (2.0%)
   is_contrast_case: 1/50 UNKNOWN (2.0%)
   display_ads: 19/50 UNKNOWN (38.0%)
-  affiliate: 19/50 UNKNOWN (38.0%)
-  own_product: 10/50 UNKNOWN (20.0%)
-  course_or_community: 18/50 UNKNOWN (36.0%)
-  newsletter_email_capture: 20/50 UNKNOWN (40.0%)
+  affiliate: 20/50 UNKNOWN (40.0%)
+  own_product: 14/50 UNKNOWN (28.0%)
+  course_or_community: 20/50 UNKNOWN (40.0%)
+  newsletter_email_capture: 22/50 UNKNOWN (44.0%)
   start_year_value: 9/50 UNKNOWN (18.0%)
   traffic_value_raw: 14/50 UNKNOWN (28.0%)
   revenue_value: 50/50 UNKNOWN (100.0%)
@@ -104,10 +62,10 @@ Row count: 50
   is_niche_authority: 49/50 completed (98.0%)
   is_contrast_case: 49/50 completed (98.0%)
   display_ads: 31/50 completed (62.0%)
-  affiliate: 31/50 completed (62.0%)
-  own_product: 40/50 completed (80.0%)
-  course_or_community: 32/50 completed (64.0%)
-  newsletter_email_capture: 30/50 completed (60.0%)
+  affiliate: 30/50 completed (60.0%)
+  own_product: 36/50 completed (72.0%)
+  course_or_community: 30/50 completed (60.0%)
+  newsletter_email_capture: 28/50 completed (56.0%)
   start_year_value: 41/50 completed (82.0%)
   traffic_value_raw: 36/50 completed (72.0%)
   revenue_value: 0/50 completed (0.0%)
@@ -121,20 +79,20 @@ Row count: 50
   Actual total evidence-tier cells counted: 500  [MATCH]
 
   Overall tier distribution (all fields combined):
-    UNKNOWN: 161 (32.2%)
+    UNKNOWN: 170 (34.0%)
     D: 98 (19.6%)
-    C: 83 (16.6%)
     A: 80 (16.0%)
     B: 78 (15.6%)
+    C: 74 (14.8%)
 
   Per-field tier distribution:
     is_niche_authority_evidence (n=50): D=33, B=15, A=1, UNKNOWN=1
     is_contrast_case_evidence (n=50): D=37, C=6, A=4, B=2, UNKNOWN=1
     display_ads_evidence (n=50): UNKNOWN=19, C=14, A=10, D=4, B=3
-    affiliate_evidence (n=50): UNKNOWN=19, A=14, C=8, D=6, B=3
-    own_product_evidence (n=50): A=13, C=13, UNKNOWN=10, D=9, B=5
-    course_or_community_evidence (n=50): UNKNOWN=18, C=16, A=10, D=5, B=1
-    newsletter_email_capture_evidence (n=50): UNKNOWN=20, C=19, A=10, D=1
+    affiliate_evidence (n=50): UNKNOWN=20, A=14, C=7, D=6, B=3
+    own_product_evidence (n=50): UNKNOWN=14, A=13, C=9, D=9, B=5
+    course_or_community_evidence (n=50): UNKNOWN=20, C=14, A=10, D=5, B=1
+    newsletter_email_capture_evidence (n=50): UNKNOWN=22, C=17, A=10, D=1
     start_year_evidence (n=50): A=18, B=14, UNKNOWN=9, C=6, D=3
     traffic_evidence (n=50): B=35, UNKNOWN=14, C=1
     revenue_evidence (n=50): UNKNOWN=50

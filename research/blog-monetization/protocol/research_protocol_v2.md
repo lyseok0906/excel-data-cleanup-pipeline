@@ -363,6 +363,39 @@ GPT가 누적 50-site 커밋(`baac63d`)을 독립 검토해 PASS로 승인한 �
 8. **Gate 최종 메시지 데이터셋 중립화** — 항상 "A0-Phase1 FINAL PASS"로 고정 출력되던 메시지를 `f"VALIDATION GATE PASS -- rows={len(rows)}"`(실패 시 `FAILED`)로 교체.
 9. **완료 기준 이행 결과:** (a) 기존 50개 재검증 — Gate 13개 섹션 전부 PASS, exit code 0 확인. (b) 위 (a)와 동일. (c) 자동 요약 생성 — `summarize_dataset.py` 신설 및 실행 확인(evidence 등급 총합 500=500 MATCH). (d) Registry 시딩 — COMMITTED 50건 + EXCLUDED_PRIOR_PILOT 97건, 총 147건, 교집합 0건으로 완료. (e) 재현성 확인 — `migrate_schema.py` → `build_a0_phase2.py` → `run_gate_v2.py` 파이프라인 재실행으로 확인. (f) 테스트 실행 — 기존 회귀 테스트 12/12 PASS(변경 없이 그대로 통과, 이번 라운드가 기존 동작을 깨지 않았음을 확인). 이번 라운드의 모든 변경은 커밋 1건으로 묶되 push하지 않으며, **950개 확장은 사용자/GPT의 다음 별도 승인 전까지 시작하지 않는다.**
 
+## 7-D. 950개 확장 직전 마지막 engineering patch (완료, 2026-09-17, commit 8dffb08 GPT 후속검토 반영)
+
+GPT가 commit `8dffb08`를 코드 수준까지 검토한 뒤, 950개 확장을 승인하기 **전** 마지막 pre-scale engineering patch로 7개 항목을 지시했다. **이번 라운드도 새 사이트 리서치 0건, Study B 미착수, 950개 확장 미실행이며, 현재 50개에 대해서만 schema/tooling을 정리했다.**
+
+1. **Study A production schema 누락 필드 실제 추가.** Protocol Section 2가 정의만 해두고 실제 canonical schema에는 없었던 `category`(고정 5-value enum, `primary_niche` 자유텍스트와 분리) / `sub_category`(예약, 현재는 전부 UNKNOWN) / `as_of_date`(ISO, UNKNOWN 불허) / `content_scale_proxy_value·method·evidence·source_url·note`(신규 5-필드 evidence-bearing 그룹, 현재 50개 전부 UNKNOWN — 새 리서치 없이 필드만 추가) 를 `schema_extend.py` 신규 모듈로 구현해 `migrate_schema.py`/`build_a0_phase2.py` 양쪽에 적용했다. `category`는 이미 알려진 배치 설계(A0-Phase1=Productivity/PKM 10개, A0-Phase2=Excel/Spreadsheet·Personal Finance·Home DIY & Food·Product Review 각 10개)에서만 배정했다. `summarize_dataset.py`도 `primary_niche`가 아니라 실제 `category` 필드를 집계하도록 수정하고, `primary_niche`는 "참고용 자유텍스트"로 별도 표기했다. 최종 production schema는 총 **65개 컬럼**이다(Section 8-A 참고).
+2. **evidence_harden.py의 자동 fabrication 2건 제거.** 기존에는 C등급인데 `_source_url`이 비어있으면 홈페이지 URL을 자동 backfill하고, D등급인데 `_note`가 비어있으면 일반 placeholder 문구를 자동 삽입했다. 두 동작 모두 "조사자가 실제로 확인하지 않은 내용을 자동 생성"하는 것이므로 제거했다 — 이제 두 경우 모두 `EvidenceHardenError`를 raise한다(Section 3-1 Gate 강제 규칙 2·3 문구도 이에 맞춰 갱신). 이미 커밋되어 있던 50개 데이터의 기존 자동-backfill 35건(C-tier 홈페이지 URL)과 9건(D-tier placeholder note)을 전부 재검토해, 원본 조사 note를 근거로 실제 홈페이지 관찰이 명확한 26건은 명시적 `SOURCE_URL_OVERRIDES` 항목으로 유지(KEEP)하고, 애매한 9건은 새 리서치 없이 UNKNOWN으로 되돌렸다(REVERT, 각 건마다 왜 확정할 수 없는지 note에 기록). D-tier 9건은 각 행에 이미 기록된 정보(니치/business model 등)만 근거로 실제 추론 문장을 채워 넣었다.
+3. **Full PSL(tldextract) 구현 — 재확인 결과: 여전히 blocker.** 클라우드 샌드박스(`pip install tldextract`, `pip download`, PyPI 직접 접근 전부 403)와 사용자 로컬 Windows 환경(`device_bash`가 2026년 9월 8일 Windows 업데이트발 Plan9-mount 문제로 계속 기동 실패, 재확인함) 양쪽 경로 모두 막혀 있음을 재확인했다. 사용자의 명시적 지시("설치가 불가능하면 임의 구현을 계속하지 말고 blocker로 보고한다")에 따라 `domain_utils.py`의 `COMMON_MULTI_LABEL_SUFFIXES` curated 목록은 전혀 확장하지 않았고 그대로 유지했다. `test_KNOWN_LIMITATION_blogspot_subdomains_incorrectly_collapse` 테스트를 신설해, 현재 known-wrong 동작(`foo.blogspot.com`과 `bar.blogspot.com`이 잘못 동일 도메인으로 collapse됨)을 의도적으로 assert함으로써, 향후 Full PSL이 실제로 적용되면 이 테스트가 즉시 실패해 갱신이 필요함을 스스로 알리도록 했다. **후속 조치 필요 사항은 Section 6-3과 동일**: 사용자 본인 네트워크 제한 없는 환경에서 `pip install tldextract` 또는 공식 PSL 스냅샷을 직접 받아 커밋하면, `registrable_domain()` 시그니처만 유지한 채 내부 구현 교체가 가능하다.
+4. **Domain Registry를 single-coordinator wave 구조로 hardening.** 기존에는 상태 전환 규칙이 문서화만 되어 있고 코드로 강제되지 않았다. `build_domain_registry.py`에 `IMMUTABLE_STATUSES = {EXCLUDED_PRIOR_PILOT, COMMITTED}`와 공유 `_transition()` 헬퍼, `RegistryStateError`를 신설해, `commit_domains`/`reject_domains`가 (a) 레지스트리에 없는 도메인, (b) 이미 immutable 상태인 도메인, (c) `RESERVED`가 아닌 도메인, (d) 다른 `batch_id`가 예약한 도메인에 대한 시도를 실제로 raise하며 거부하도록 만들었다. 레지스트리 seed 시점의 A0/prior-pilot registrable-domain 중복은 기존 WARNING에서 **non-zero exit(FAIL)**로 강화했다. `merge_wave_into_master`도 raw canonical 문자열 중복 검사에 더해 `domain_utils.registrable_domain()` 기준 중복 검사를 추가했다. 실제 950-site 리서치를 실행하지 않은 채, 이 상태 머신 전체를 end-to-end로 검증하는 `wave_coordinator.py`(신규, `run_wave()` + `--demo` 모드)를 작성해 synthetic placeholder 도메인 3개로 RESERVE→research→Gate→COMMIT→merge 전체 흐름과 상태 전환 거부 케이스(재-COMMIT, 잘못된 batch_id, immutable 전환)를 실제로 실행/검증했다.
+5. **회귀 테스트 16건 신규 추가** (기존 12건 유지, 총 28건): non-UNKNOWN value + UNKNOWN evidence FAIL, C등급 no-source_url FAIL, D등급 empty-note FAIL, D등급 real-note PASS, revenue_value에 acquisition-price/자유텍스트 FAIL, revenue_value clean-figure/UNKNOWN PASS, summary evidence-cell 총합 자체검증, summary가 `primary_niche`가 아니라 `category`를 사용하는지 확인, registry duplicate reserve 거부, `EXCLUDED_PRIOR_PILOT`→`COMMITTED` 전환 거부, `COMMITTED`→`RESERVED` 전환 거부, wrong-batch_id commit 거부, registrable-domain 기준 merge 중복 거부, 그리고 Full PSL 관련 known-limitation 테스트(blogspot 서브도메인 오분류를 의도적으로 assert).
+6. **50개 데이터셋 전체 재검증 완료.** row count 50, Gate 13개 섹션 전부 PASS(exit 0), `summarize_dataset.py` 자동 생성(evidence 셀 총합 self-check 일치), Registry = `COMMITTED` 50 + `EXCLUDED_PRIOR_PILOT` 97 = 147행·교집합 0, 회귀 테스트 28/28 PASS, `migrate_schema.py`→`build_a0_phase2.py` 파이프라인 재실행으로 재현성 확인. **950개는 실행하지 않았다.**
+7. 이번 라운드의 모든 변경은 커밋 1건으로 묶고 push하지 않는다(사용자 지시). 남은 blocker는 정확히 1건(Item 3, Full PSL)이며, 그 외 항목은 전부 완료됐다.
+
+### 7-D-1. 65-column production schema (최종, 이번 라운드 기준)
+
+```
+canonical_root_domain, site_name, primary_niche, category, sub_category, as_of_date,
+sampling_stratum, traffic_tier,
+is_niche_authority(+evidence/source_url/note),
+is_contrast_case(+evidence/source_url/note),
+contrast_pattern, contrast_evidence_period,
+start_year_value(+evidence/source_url/note),
+traffic_provider, traffic_metric, traffic_scope,
+traffic_value_raw, traffic_value_raw_period, traffic_value_monthly_equivalent, traffic_normalization_method,
+traffic_research_date, traffic_source_period, traffic_evidence, traffic_source_url, traffic_note,
+revenue_value, revenue_figure_period, revenue_research_date, revenue_evidence, revenue_source_url, revenue_note,
+display_ads(+evidence/source_url/note),
+affiliate(+evidence/source_url/note),
+own_product(+evidence/source_url/note),
+course_or_community(+evidence/source_url/note),
+newsletter_email_capture(+evidence/source_url/note),
+content_scale_proxy_value(+method/evidence/source_url/note)
+```
+
 ## 8. 자동화 가능한 필드 vs 사람 판단이 필요한 필드 (100개 경험 기반 분류)
 
 **자동화/API로 확장 가능:**

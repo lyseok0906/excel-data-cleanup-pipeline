@@ -21,6 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 import domain_utils
+import schema_extend
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_CSV = HERE.parent / "validation_10_v2.csv"
@@ -59,6 +60,15 @@ def check_enum(rows):
             ev = r[f].strip()
             if ev not in VALID_EV:
                 violations.append((r["canonical_root_domain"], f, ev))
+        # Production schema fields (GPT follow-up to commit 8dffb08, 2026-09-17):
+        # category is a closed enum (schema_extend.CATEGORY_ENUM), distinct from
+        # free-text primary_niche.
+        cat = r["category"].strip()
+        if cat not in schema_extend.CATEGORY_ENUM:
+            violations.append((r["canonical_root_domain"], "category", cat))
+        proxy_ev = r["content_scale_proxy_evidence"].strip()
+        if proxy_ev not in VALID_EV:
+            violations.append((r["canonical_root_domain"], "content_scale_proxy_evidence", proxy_ev))
     return violations
 
 
@@ -107,6 +117,7 @@ def check_provenance(rows):
         ("traffic", "traffic_source_url", "traffic_evidence"),
         ("revenue", "revenue_source_url", "revenue_evidence"),
         ("start_year", "start_year_source_url", "start_year_evidence"),
+        ("content_scale_proxy", "content_scale_proxy_source_url", "content_scale_proxy_evidence"),
     ]
     for r in rows:
         for base, urlfield, evfield in field_url_pairs:
@@ -130,6 +141,7 @@ def check_evidence_note_for_d(rows):
         ("traffic", "traffic_note", "traffic_evidence"),
         ("revenue", "revenue_note", "revenue_evidence"),
         ("start_year", "start_year_note", "start_year_evidence"),
+        ("content_scale_proxy", "content_scale_proxy_note", "content_scale_proxy_evidence"),
     ]
     for r in rows:
         for base, notefield, evfield in field_note_pairs:
@@ -152,6 +164,7 @@ def check_value_requires_evidence(rows):
         ("traffic_value_raw", "traffic_evidence"),
         ("revenue_value", "revenue_evidence"),
         ("start_year_value", "start_year_evidence"),
+        ("content_scale_proxy_value", "content_scale_proxy_evidence"),
     ]
     for r in rows:
         for vf, ef in pairs:
@@ -191,6 +204,12 @@ def check_dates(rows):
             v = r[f].strip()
             if v != "UNKNOWN" and not ISO_DATE_RE.match(v):
                 bad.append((r["canonical_root_domain"], f, v))
+        # as_of_date (production schema field) must always be a real ISO date --
+        # unlike other date fields it has no UNKNOWN escape hatch, since every
+        # row is researched as of SOME date even if individual sub-fields are UNKNOWN.
+        as_of = r["as_of_date"].strip()
+        if not ISO_DATE_RE.match(as_of):
+            bad.append((r["canonical_root_domain"], "as_of_date", as_of))
     return bad
 
 
@@ -201,6 +220,7 @@ def check_rule8(rows):
         ("traffic_value_raw", "traffic_evidence"),
         ("revenue_value", "revenue_evidence"),
         ("start_year_value", "start_year_evidence"),
+        ("content_scale_proxy_value", "content_scale_proxy_evidence"),
     ]
     for r in rows:
         for vf, ef in pairs:

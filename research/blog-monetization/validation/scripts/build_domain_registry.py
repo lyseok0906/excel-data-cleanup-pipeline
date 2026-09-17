@@ -30,18 +30,36 @@ state machine:
                             the registry (not deleted) so it is never
                             re-reserved by mistake.
 
-Intended flow for a future 950-site wave:
+Single-coordinator architecture (GPT follow-up to commit 8dffb08, 2026-09-17,
+Item 4): a parallel research WORKER never writes to the registry directly.
+Only a single COORDINATOR (see wave_coordinator.py) performs the sequence
+below; workers only research a domain they were handed after it was
+already RESERVED, and hand validated rows back for the coordinator to
+commit. This prevents two workers from racing to reserve the same domain.
+
+Intended flow for a future 950-site wave (coordinator-only):
     candidate domain
         -> registrable_domain() canonicalization (domain_utils.py)
         -> check_duplicate() against the registry AND against every
            status (a domain EXCLUDED_PRIOR_PILOT or already COMMITTED
            or RESERVED by another wave must be skipped)
         -> reserve_domains([...], batch_id=...)   (status=RESERVED)
-        -> research it, run the per-wave Gate
+        -> dispatch to a worker for research, run the per-wave Gate
         -> commit_domains([...], batch_id=...)    (status=COMMITTED)
            or reject_domains([...], reason=...)   (status=REJECTED)
         -> merge_wave_into_master(...) appends the wave's validated CSV
            rows into the master Study A dataset file.
+
+State-transition rules (enforced by commit_domains/reject_domains, not
+just documented -- RegistryStateError below):
+    EXCLUDED_PRIOR_PILOT -> (nothing)            immutable, always
+    COMMITTED            -> (nothing)            immutable, always
+    (new domain)         -> RESERVED             via reserve_domains only
+    RESERVED (batch X)   -> COMMITTED/REJECTED   only by batch_id == X
+    RESERVED (batch X)   -> COMMITTED/REJECTED   attempted by batch_id != X
+                                                  is REJECTED with an error
+                                                  (a wave can never touch
+                                                  another wave's reservation)
 
 This script does NOT perform any new site research and does NOT reserve
 or commit any domains on its own. Run directly, it only (re)builds the
@@ -75,6 +93,11 @@ REGISTRY_FIELDNAMES = [
 REGISTRY_PATH = Path(__file__).parent.parent.parent / "registry" / "domain_registry.csv"
 
 VALID_STATUSES = {"EXCLUDED_PRIOR_PILOT", "RESERVED", "COMMITTED", "REJECTED"}
+IMMUTABLE_STATUSES = {"EXCLUDED_PRIOR_PILOT", "COMMITTED"}
+
+
+class RegistryStateError(ValueError):
+    """Raised when a commit/reject call would perform an illegal state transition."""
 
 # NOTE (pre-950 hardening round, 2026-09-17): the original 100-site pilot
 # study's domain list (research/blog-monetization/pilot-100/sites.csv in
@@ -187,24 +210,50 @@ def reserve_domains(rows, candidates, batch_id, source_group="Study A (950-expan
     return rows, dupes
 
 
-def commit_domains(rows, domains, batch_id):
+def _transition(rows, domains, batch_id, target_status):
+    """
+    Shared enforcement for commit_domains/reject_domains: only a domain
+    that is currently RESERVED under EXACTLY this batch_id may transition
+    to target_status. Everything else raises RegistryStateError -- a
+    coordinator bug (wrong batch_id, committing something never reserved,
+    or trying to touch an immutable row) must be loud, never silently
+    ignored or silently overwritten.
+    """
     idx = registry_index(rows)
     for d in domains:
         reg = domain_utils.registrable_domain(d)
-        if reg in idx:
-            idx[reg]["status"] = "COMMITTED"
-            idx[reg]["batch_id"] = batch_id
+        if reg not in idx:
+            raise RegistryStateError(
+                f"{d}: not present in the registry at all -- a domain must be reserve_domains()'d "
+                f"before it can transition to {target_status}."
+            )
+        row = idx[reg]
+        if row["status"] in IMMUTABLE_STATUSES:
+            raise RegistryStateError(
+                f"{d}: status={row['status']} is immutable and can never transition (attempted -> {target_status})."
+            )
+        if row["status"] != "RESERVED":
+            raise RegistryStateError(
+                f"{d}: status={row['status']} -> {target_status} is not a legal transition "
+                f"(only RESERVED -> COMMITTED/REJECTED is allowed)."
+            )
+        if row["batch_id"] != batch_id:
+            raise RegistryStateError(
+                f"{d}: reserved under batch_id={row['batch_id']!r}, cannot be transitioned to {target_status} "
+                f"by a different batch_id={batch_id!r} -- another wave's reservation is off-limits."
+            )
+        row["status"] = target_status
     return rows
+
+
+def commit_domains(rows, domains, batch_id):
+    """RESERVED (this batch_id only) -> COMMITTED. Raises RegistryStateError on any illegal transition."""
+    return _transition(rows, domains, batch_id, "COMMITTED")
 
 
 def reject_domains(rows, domains, batch_id):
-    idx = registry_index(rows)
-    for d in domains:
-        reg = domain_utils.registrable_domain(d)
-        if reg in idx:
-            idx[reg]["status"] = "REJECTED"
-            idx[reg]["batch_id"] = batch_id
-    return rows
+    """RESERVED (this batch_id only) -> REJECTED. Raises RegistryStateError on any illegal transition."""
+    return _transition(rows, domains, batch_id, "REJECTED")
 
 
 def merge_wave_into_master(wave_csv: Path, master_csv: Path):
@@ -238,6 +287,19 @@ def merge_wave_into_master(wave_csv: Path, master_csv: Path):
     overlap = existing_domains & new_domains
     if overlap:
         raise ValueError(f"Duplicate canonical_root_domain(s) between wave and master: {sorted(overlap)}")
+
+    # Registrable-domain-based check too (Item 4): two different raw strings
+    # (e.g. "www.example.com" that slipped through clean-root-form validation
+    # elsewhere, or a genuine same-domain-different-casing typo) must not both
+    # end up in the master dataset even if their raw canonical_root_domain
+    # strings happen to differ.
+    existing_reg = {domain_utils.registrable_domain(d) for d in existing_domains}
+    new_reg = {domain_utils.registrable_domain(d) for d in new_domains}
+    reg_overlap = existing_reg & new_reg
+    if reg_overlap:
+        raise ValueError(
+            f"Duplicate registrable domain(s) between wave and master (raw strings may differ): {sorted(reg_overlap)}"
+        )
 
     merged = master_rows + wave_rows
     with open(master_csv, "w", newline="", encoding="utf-8") as f:
@@ -274,14 +336,25 @@ def main():
             file=sys.stderr,
         )
 
-    # Sanity: no duplicate registrable_domain across the seeded set.
+    # Sanity: no duplicate registrable_domain across the seeded set. This is a
+    # hard FAIL (non-zero exit), not a warning (Item 4) -- an overlap between
+    # A0/COMMITTED and the prior pilot's EXCLUDED_PRIOR_PILOT would mean a
+    # domain that should have been off-limits was researched anyway, which is
+    # exactly the kind of silent duplicate the registry exists to prevent.
     seen = {}
+    dupes_found = []
     for r in rows:
         reg = r["registrable_domain"]
         if reg in seen:
-            print(f"WARNING: duplicate registrable_domain in seed data: {reg} "
-                  f"({seen[reg]['canonical_root_domain']} vs {r['canonical_root_domain']})", file=sys.stderr)
+            dupes_found.append((reg, seen[reg]["canonical_root_domain"], seen[reg]["status"],
+                                 r["canonical_root_domain"], r["status"]))
         seen[reg] = r
+    if dupes_found:
+        print("FAIL: duplicate registrable_domain(s) found across seeded registry data "
+              "(a domain should never appear under two different statuses/sources):", file=sys.stderr)
+        for reg, dom1, st1, dom2, st2 in dupes_found:
+            print(f"  {reg}: {dom1} ({st1}) vs {dom2} ({st2})", file=sys.stderr)
+        return 1
 
     out_path = Path(args.out)
     save_registry(out_path, rows)

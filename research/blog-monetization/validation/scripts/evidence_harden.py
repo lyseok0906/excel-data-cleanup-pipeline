@@ -3,35 +3,40 @@
 Shared post-processing pass applied to every generated row (both
 migrate_schema.py's 10 A0-Phase1 rows and build_a0_phase2.py's 40
 A0-Phase2 rows) to enforce the evidence-semantics rules confirmed during
-the pre-950 hardening round (2026-09-17):
+the pre-950 hardening round (2026-09-17), STRICT VARIANT confirmed during
+the follow-up "remove auto-fabrication" engineering patch (2026-09-17,
+same day, GPT-reviewed commit 8dffb08 follow-up):
 
   1. Rule #8 (unchanged): value == UNKNOWN  =>  evidence must be UNKNOWN.
-  2. New: value != UNKNOWN  =>  evidence must NOT be UNKNOWN. A value can
-     never be asserted (Y/N, a number, a year) without SOME evidence tier
-     backing it. If this is violated the row must be fixed by hand in the
-     generator script -- this module refuses to guess a tier, it only
-     raises so the inconsistency surfaces immediately during generation.
-  3. New: evidence in (A, B, C)  =>  the field's DEDICATED source_url must
-     be a real http(s) URL (no note-text fallback -- unchanged principle
-     from the earlier hardening round, now applied to C as well as A/B).
-     For evidence == C specifically (the researcher's own direct site
-     observation), if no URL was captured in the original research pass,
-     this module backfills the site's own homepage ("https://{domain}/")
-     as the source_url -- this is not a new claim or new research, it is
-     simply naming the page a C-tier "I looked at the site" observation
-     is inherently about. A/B evidence lacking a URL is NOT auto-filled
-     (that would require inventing a citation) -- it raises instead, so
-     the generator script must supply a real URL or downgrade the tier.
-  4. New: evidence == D  =>  note must be non-empty (the reasoning behind
-     a D-tier inference must always be stated in the note, never left
-     blank). If a generator forgot to pass a note, this module fills a
-     transparent placeholder rather than fabricating a reason.
+  2. value != UNKNOWN  =>  evidence must NOT be UNKNOWN. A value can never
+     be asserted (Y/N, a number, a year) without SOME evidence tier
+     backing it. Raises so the generator script must fix it by hand.
+  3. evidence in (A, B, C)  =>  the field's DEDICATED source_url must be a
+     real http(s) URL (no note-text fallback). This module does NOT
+     auto-backfill anything, for ANY tier including C -- a prior version
+     of this module auto-filled a guessed site-homepage URL for C-tier
+     evidence lacking one; that guess could be wrong (the actual
+     observation might have been a sub-page, a search result, or a
+     different property entirely) and is a form of fabrication. This
+     version raises EvidenceHardenError instead. The generator script
+     must supply the real URL actually used, or downgrade the tier if it
+     isn't known.
+  4. evidence == D  =>  note must be non-empty. This module does NOT
+     auto-fill a generic placeholder note -- a prior version did, which
+     is a form of fabricated (contentless) reasoning. This version raises
+     EvidenceHardenError instead. The generator script must supply the
+     real reasoning that justified the D-tier inference.
 
-This module performs NO web research and invents NO facts. It only
-(a) verifies internal consistency of data already supplied by the
-generator scripts, and (b) backfills two specific, clearly-labeled,
-mechanical defaults (a C-tier homepage URL; a D-tier placeholder note)
-that were already implied by the evidence tier itself.
+This module performs NO web research and invents NO facts, NO URLs, and
+NO reasoning text. It is purely a consistency CHECK now -- every value it
+writes into a row (other than forcing evidence=UNKNOWN under Rule #8) is
+supplied by the caller before harden_row() is invoked, typically via an
+explicit, human-reviewed correction table in the generator script (see
+migrate_schema.py's KNOWN_C_TIER_HOMEPAGE_CITATIONS /
+KNOWN_REVERT_TO_UNKNOWN and build_a0_phase2.py's
+KNOWN_D_TIER_REASONING_NOTES for the pre-950 dataset's specific
+corrections, each individually reviewed against the original research
+notes rather than applied as a blanket rule).
 """
 
 # (value_field, evidence_field, source_url_field, note_field) for every
@@ -54,12 +59,6 @@ COMPOSITE_GROUPS = [
 
 ALL_GROUPS = SIMPLE_GROUPS + COMPOSITE_GROUPS
 
-D_TIER_PLACEHOLDER_NOTE = (
-    "D-tier inference; no additional reasoning was captured for this field during the "
-    "original research pass, and no new research was performed to add one during this "
-    "hardening round -- left as a plain, undetailed reasoned inference."
-)
-
 
 class EvidenceHardenError(ValueError):
     pass
@@ -67,7 +66,6 @@ class EvidenceHardenError(ValueError):
 
 def harden_row(d: dict) -> dict:
     domain = d["canonical_root_domain"]
-    homepage = f"https://{domain}/"
 
     for value_field, ev_field, url_field, note_field in ALL_GROUPS:
         value = str(d[value_field]).strip()
@@ -91,21 +89,18 @@ def harden_row(d: dict) -> dict:
         if ev in ("A", "B", "C"):
             has_valid_url = url.lower().startswith(("http://", "https://"))
             if not has_valid_url:
-                if ev == "C":
-                    d[url_field] = homepage
-                    if "source_url backfilled to site homepage" not in note:
-                        d[note_field] = (note + " [source_url backfilled to site homepage during pre-950 "
-                                          "hardening pass -- same observation already described in this note, "
-                                          "no new claim or new research.]").strip()
-                else:
-                    raise EvidenceHardenError(
-                        f"{domain}: {value_field} has evidence={ev} but no valid dedicated {url_field} "
-                        f"-- A/B evidence must cite a real URL; fix in the generator script "
-                        f"(supply the URL or downgrade the tier)."
-                    )
+                raise EvidenceHardenError(
+                    f"{domain}: {value_field} has evidence={ev} but no valid dedicated {url_field} "
+                    f"-- A/B/C evidence must cite a real URL (no auto-backfill); fix in the generator "
+                    f"script by supplying the URL actually used or downgrading the tier."
+                )
 
         if ev == "D" and not note:
-            d[note_field] = D_TIER_PLACEHOLDER_NOTE
+            raise EvidenceHardenError(
+                f"{domain}: {value_field} has evidence=D but {note_field} is empty -- "
+                f"D-tier inference must always state its real reasoning (no placeholder auto-fill); "
+                f"fix in the generator script."
+            )
 
     return d
 

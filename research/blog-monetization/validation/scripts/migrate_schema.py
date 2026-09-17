@@ -33,6 +33,7 @@ from pathlib import Path
 
 import domain_utils
 import evidence_harden
+import schema_extend
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_SRC = HERE.parent / "validation_10.csv"
@@ -75,21 +76,57 @@ def traffic_tier_for(traffic_scope: str, monthly_equivalent):
 SOURCE_URL_OVERRIDES = {
     "thomasjfrank.com": {
         "start_year_source_url": "https://www.starterstory.com/stories/thomas-frank",
+        # C-tier homepage citations confirmed genuine (fabrication-removal patch, 2026-09-17):
+        # each field's own note explicitly describes a homepage-level observation.
+        "display_ads_source_url": "https://thomasjfrank.com/",
+        "own_product_source_url": "https://thomasjfrank.com/",
+        "course_or_community_source_url": "https://thomasjfrank.com/",
+        "newsletter_email_capture_source_url": "https://thomasjfrank.com/",
     },
     "zapier.com": {
         "start_year_source_url": "https://zapier.com/blog/erratic-effective-story-behind-zapier-blog-2013/",
+        "display_ads_source_url": "https://zapier.com/",
     },
     "asianefficiency.com": {
         "start_year_source_url": "https://www.asianefficiency.com/about/",
+        "display_ads_source_url": "https://asianefficiency.com/",
+        "course_or_community_source_url": "https://asianefficiency.com/",
+        "newsletter_email_capture_source_url": "https://asianefficiency.com/",
+    },
+    "nesslabs.com": {
+        "display_ads_source_url": "https://nesslabs.com/",
+        "own_product_source_url": "https://nesslabs.com/",
+        "course_or_community_source_url": "https://nesslabs.com/",
+        "newsletter_email_capture_source_url": "https://nesslabs.com/",
     },
     "keepproductive.com": {
         "start_year_source_url": "https://theplus.so/who/francesco-dalessio",
     },
+    "fortelabs.com": {
+        "display_ads_source_url": "https://fortelabs.com/",
+        "own_product_source_url": "https://fortelabs.com/",
+        "course_or_community_source_url": "https://fortelabs.com/",
+        "newsletter_email_capture_source_url": "https://fortelabs.com/",
+    },
+    "zettelkasten.de": {
+        "display_ads_source_url": "https://zettelkasten.de/",
+        "own_product_source_url": "https://zettelkasten.de/",
+        "course_or_community_source_url": "https://zettelkasten.de/",
+        "newsletter_email_capture_source_url": "https://zettelkasten.de/",
+    },
     "linkingyourthinking.com": {
         "start_year_source_url": "https://medium.com/@nickmilo22/reflecting-on-the-age-of-the-linked-note-ff13945d6af4",
+        "display_ads_source_url": "https://linkingyourthinking.com/",
+        "own_product_source_url": "https://linkingyourthinking.com/",
+        "course_or_community_source_url": "https://linkingyourthinking.com/",
+        "newsletter_email_capture_source_url": "https://linkingyourthinking.com/",
     },
     "43folders.com": {
         "start_year_source_url": "https://en.wikipedia.org/wiki/Merlin_Mann",
+        # course_or_community/newsletter notes describe the (parked) domain itself, i.e. its
+        # one and only page -- equivalent to a homepage-level observation.
+        "course_or_community_source_url": "https://43folders.com/",
+        "newsletter_email_capture_source_url": "https://43folders.com/",
     },
     "zenhabits.net": {
         "start_year_source_url": "https://en.wikipedia.org/wiki/Zen_Habits",
@@ -103,6 +140,7 @@ SOURCE_URL_OVERRIDES = {
 # deterministic regardless of how the row-building code below evolves.
 FIELDNAMES = [
     "canonical_root_domain", "site_name", "primary_niche",
+    "category", "sub_category", "as_of_date",
     "sampling_stratum", "traffic_tier",
     "is_niche_authority", "is_niche_authority_evidence", "is_niche_authority_source_url", "is_niche_authority_note",
     "is_contrast_case", "is_contrast_case_evidence", "is_contrast_case_source_url", "is_contrast_case_note",
@@ -119,7 +157,7 @@ FIELDNAMES = [
     "own_product", "own_product_evidence", "own_product_source_url", "own_product_note",
     "course_or_community", "course_or_community_evidence", "course_or_community_source_url", "course_or_community_note",
     "newsletter_email_capture", "newsletter_email_capture_evidence", "newsletter_email_capture_source_url", "newsletter_email_capture_note",
-]
+] + schema_extend.EXTRA_FIELDNAMES
 
 BOOL_FIELDS_WITH_SOURCE = [
     "display_ads", "affiliate", "own_product", "course_or_community", "newsletter_email_capture",
@@ -264,10 +302,27 @@ def build_rows(old: dict) -> list:
         "Blog-attributable revenue not separable from overall SaaS company revenue. Zapier is reported elsewhere as a large, profitable SaaS company, but no source attributes a figure to blog content specifically.",
         {
             "display_ads": bool_field(o, "display_ads"),
-            "affiliate": bool_field(o, "affiliate"),
-            "own_product": bool_field(o, "own_product"),
-            "course_or_community": bool_field(o, "course_or_community"),
-            "newsletter_email_capture": bool_field(o, "newsletter_email_capture"),
+            "affiliate": ("UNKNOWN", "UNKNOWN", "UNKNOWN",
+                          "[fabrication-removal patch, 2026-09-17] Reverted to UNKNOWN: the original research note "
+                          "described this as an observation of the Zapier blog ('on blog'), not confirmed as the "
+                          "site's root homepage specifically; per the no-auto-backfill policy this module no longer "
+                          "guesses a source_url for an imprecisely-located C-tier observation, and no new research "
+                          "was performed to pin down the exact page. Original finding (content promotes Zapier's "
+                          "own product rather than third-party affiliate links) is preserved here as unverified context only."),
+            "own_product": ("UNKNOWN", "UNKNOWN", "UNKNOWN",
+                            "[fabrication-removal patch, 2026-09-17] Reverted to UNKNOWN: original observation was of "
+                            "the Zapier blog nav (Zaps/Tables/Forms/Canvas/Agents links), not confirmed as the root "
+                            "homepage; no exact URL pinned down without new research. Underlying finding (blog "
+                            "functions as content-marketing funnel for Zapier's own SaaS product) preserved as "
+                            "unverified context only."),
+            "course_or_community": ("UNKNOWN", "UNKNOWN", "UNKNOWN",
+                                     "[fabrication-removal patch, 2026-09-17] Reverted to UNKNOWN: 'no paid course or "
+                                     "community offering observed; free guides only' was not tied to a specific "
+                                     "confirmed URL in the original note; no new research performed to pin one down."),
+            "newsletter_email_capture": ("UNKNOWN", "UNKNOWN", "UNKNOWN",
+                                          "[fabrication-removal patch, 2026-09-17] Reverted to UNKNOWN: newsletter "
+                                          "signup was observed 'on blog', not confirmed as the root homepage "
+                                          "specifically; no exact URL pinned down without new research."),
         },
     )
 
@@ -293,7 +348,14 @@ def build_rows(old: dict) -> list:
                 o, "affiliate",
                 note_extra="[schema patch] evidence downgraded from D to UNKNOWN per Rule #8 (UNKNOWN value must carry UNKNOWN evidence); the D-level inference reasoning is preserved here as context only, not as evidence backing.",
             ),
-            "own_product": bool_field(o, "own_product"),
+            "own_product": ("UNKNOWN", "UNKNOWN", "UNKNOWN",
+                            "[fabrication-removal patch, 2026-09-17] Reverted to UNKNOWN: original note said the "
+                            "customer login portal was 'found in search results', not observed on the site's "
+                            "homepage or any other confirmed page; per the no-auto-backfill policy this module does "
+                            "not guess a source_url for a search-result-based finding, and no new research was "
+                            "performed to visit and confirm the actual page. Original finding (own courses/training "
+                            "programs plus a 'store.asianefficiency.com/productivity-blueprint' portal found in "
+                            "search results) preserved here as unverified context only."),
             "course_or_community": bool_field(o, "course_or_community"),
             "newsletter_email_capture": bool_field(o, "newsletter_email_capture"),
         },
@@ -445,7 +507,13 @@ def build_rows(old: dict) -> list:
         {
             "display_ads": bool_field(o, "display_ads", source_url="https://www.43folders.com/"),
             "affiliate": bool_field(o, "affiliate", source_url="https://www.43folders.com/"),
-            "own_product": bool_field(o, "own_product"),
+            "own_product": ("UNKNOWN", "UNKNOWN", "UNKNOWN",
+                            "[fabrication-removal patch, 2026-09-17] Reverted to UNKNOWN: the 'no direct product "
+                            "sales even at its peak' claim was attributed to a MetaFilter Q&A thread, not a direct "
+                            "site observation -- the original C tier and homepage source_url did not match what the "
+                            "note actually described. Per the no-auto-backfill policy this module does not guess a "
+                            "source_url, and no new research was performed to locate the actual MetaFilter thread "
+                            "URL. Original finding preserved here as unverified context only."),
             "course_or_community": bool_field(o, "course_or_community"),
             "newsletter_email_capture": bool_field(o, "newsletter_email_capture"),
         },
@@ -471,12 +539,30 @@ def build_rows(old: dict) -> list:
         {
             "display_ads": bool_field(o, "display_ads"),
             "affiliate": bool_field(o, "affiliate"),
-            "own_product": bool_field(o, "own_product"),
-            "course_or_community": bool_field(o, "course_or_community"),
-            "newsletter_email_capture": bool_field(o, "newsletter_email_capture"),
+            "own_product": ("UNKNOWN", "UNKNOWN", "UNKNOWN",
+                            "[fabrication-removal patch, 2026-09-17] Reverted to UNKNOWN: original note said books "
+                            "and the 'Create the Life You Want' program were 'referenced on the About/books pages', "
+                            "not the homepage specifically; per the no-auto-backfill policy this module does not "
+                            "guess between /about and /books, and no new research was performed to identify the "
+                            "exact page. Original finding preserved here as unverified context only."),
+            "course_or_community": ("UNKNOWN", "UNKNOWN", "UNKNOWN",
+                                     "[fabrication-removal patch, 2026-09-17] Reverted to UNKNOWN: 1-on-1 coaching "
+                                     "and the Fearless Living Academy were 'observed on About page', not the "
+                                     "homepage; per the no-auto-backfill policy this module does not substitute a "
+                                     "homepage URL for a confirmed About-page observation without knowing its exact "
+                                     "path, and no new research was performed to locate it. Original finding "
+                                     "preserved here as unverified context only."),
+            "newsletter_email_capture": ("UNKNOWN", "UNKNOWN", "UNKNOWN",
+                                          "[fabrication-removal patch, 2026-09-17] Reverted to UNKNOWN: newsletter "
+                                          "signup was 'observed on About page', not the homepage; per the "
+                                          "no-auto-backfill policy this module does not substitute a homepage URL "
+                                          "for a confirmed About-page observation without knowing its exact path, "
+                                          "and no new research was performed to locate it. Original finding "
+                                          "preserved here as unverified context only."),
         },
     )
 
+    schema_extend.extend_rows_with_production_schema(rows, start_index=0)
     return rows
 
 

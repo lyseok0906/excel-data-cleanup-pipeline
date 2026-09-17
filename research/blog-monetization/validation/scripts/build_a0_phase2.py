@@ -22,6 +22,7 @@ from pathlib import Path
 
 import migrate_schema  # reuse FIELDNAMES + traffic_tier_for + round_monthly
 import evidence_harden
+import schema_extend
 
 HERE = Path(__file__).resolve().parent
 OUT_40 = HERE.parent / "a0_phase2_40.csv"
@@ -127,7 +128,10 @@ def row(canonical_root_domain, site_name, primary_niche, sampling_stratum,
         d[field + "_source_url"] = u
         d[field + "_note"] = n
 
-    missing = set(FIELDNAMES) - set(d.keys())
+    # Production-schema fields (category/sub_category/as_of_date/content_scale_proxy_*)
+    # are added in bulk after all 40 rows are built (schema_extend.extend_rows_with_production_schema),
+    # so they are expected to be "missing" at this per-row construction stage.
+    missing = set(FIELDNAMES) - set(d.keys()) - set(schema_extend.ALL_NEW_FIELDNAMES)
     extra = set(d.keys()) - set(FIELDNAMES)
     if missing or extra:
         raise SystemExit(f"Column mismatch for {canonical_root_domain}: missing={missing} extra={extra}")
@@ -566,6 +570,10 @@ rows.append(row(
     "General personal finance/consumer finance commentary",
     "Contrast Cohort",
     is_niche_authority="N", is_niche_authority_evidence="D",
+    is_niche_authority_note="Site's own recorded primary_niche is general personal finance/consumer finance "
+                             "commentary, not a specific named sub-niche, and the domain is now shut down "
+                             "(contrast_pattern=shutdown) -- neither is consistent with being a current niche "
+                             "authority.",
     is_contrast_case="Y", is_contrast_case_evidence="C", is_contrast_case_url="https://robberger.com/welcome-consumerism-commentary-and-five-cent-nickel-readers/",
     is_contrast_case_note="Currently 302-redirects to a page where owner Rob Berger states he \"closed ConsumerismCommentary.com and redirected it\" because running multiple websites was too much (operator's own stated reason, tier A content on a tier-C-observed live redirect).",
     contrast_pattern="shutdown", contrast_evidence_period="Founded 2003 (per QuinStreet's 2011 acquisition press release); acquired by QuinStreet Nov 2011; later reacquired by Rob Berger; live redirect to shutdown-announcement page observed 2026-09-17.",
@@ -677,7 +685,10 @@ rows.append(row(
     display_ads=("UNKNOWN", UNKNOWN, UNKNOWN, "Site inactive since Aug 30, 2019; not assessed."),
     affiliate=("UNKNOWN", UNKNOWN, UNKNOWN, ""),
     own_product=("Y", "D", UNKNOWN, "Historically sold books/products under the Design*Sponge brand."),
-    course_or_community=("N", "D", UNKNOWN, ""),
+    course_or_community=("N", "D", UNKNOWN,
+                          "Site has been inactive as an original content property since closing Aug 30, 2019 "
+                          "(contrast_pattern=shutdown); no course or community offering could plausibly be "
+                          "operating on a domain that stopped publishing years ago."),
     newsletter_email_capture=("UNKNOWN", UNKNOWN, UNKNOWN, ""),
 ))
 
@@ -749,7 +760,10 @@ rows.append(row(
     display_ads=("UNKNOWN", UNKNOWN, UNKNOWN, "Not directly confirmed; affiliate confirmed separately."),
     affiliate=("Y", "C", "https://tinyhousetalk.com/", "Explicit Amazon Associates disclosure observed on-site."),
     own_product=("N", "D", UNKNOWN, "Offers free plans/eBooks, not sold products."),
-    course_or_community=("N", "D", UNKNOWN, ""),
+    course_or_community=("N", "D", UNKNOWN,
+                          "Site's content model (per its recorded primary_niche) is curation/news aggregation of "
+                          "other people's tiny houses, not a personal-brand teaching site; no course or paid "
+                          "community was identified alongside its free plans/eBooks and affiliate/ad monetization."),
     newsletter_email_capture=("Y", "C", "https://tinyhousetalk.com/", "\"Tiny House Newsletter\" via ConvertKit observed."),
 ))
 
@@ -805,6 +819,9 @@ rows.append(row(
     "Home-cooking/family recipes",
     "Mid-scale Active Site",
     is_niche_authority="N", is_niche_authority_evidence="D",
+    is_niche_authority_note="Site's own recorded primary_niche is general home-cooking/family recipes, a broad "
+                             "category rather than a specific named sub-niche, so it was not treated as a narrow "
+                             "niche authority.",
     start_year="2010", start_year_evidence="A", start_year_url="https://www.afarmgirlsdabbles.com/about/",
     start_year_note="Operator's own statement: \"I started A Farmgirl's Dabbles in 2010\".",
     traffic=traffic_block(
@@ -878,6 +895,8 @@ rows.append(row(
     "Tech product reviews & buying guides",
     "Large/Traffic Leader",
     is_niche_authority="N", is_niche_authority_evidence="D",
+    is_niche_authority_note="Site's own recorded primary_niche is broad tech product reviews & buying guides "
+                             "across many categories, not a narrowly specialized sub-niche authority.",
     start_year="2007", start_year_evidence="B", start_year_url="https://en.wikipedia.org/wiki/Tom%27s_Guide",
     start_year_note="Founded 2007 by Bestofmedia, per Wikipedia; ownership chain (Bestofmedia to TechMediaNetwork 2013 to Purch 2014 to Future 2018) corroborated by Tom's Guide's own About Us page.",
     traffic=traffic_block(
@@ -888,7 +907,10 @@ rows.append(row(
     revenue_value=UNKNOWN, revenue_note="No site-specific figure found; parent Future plc reports only at company level.",
     display_ads=("UNKNOWN", UNKNOWN, UNKNOWN, "Only a ScorecardResearch tracking pixel was found on the about page, which is not itself proof of display ad units."),
     affiliate=("Y", "A", "https://www.tomsguide.com/reference/about-us", "Own about page: \"We sometimes use affiliate links to products and services on retailer sites for which we can receive compensation.\" Also discloses paid advertorials."),
-    own_product=("N", "D", UNKNOWN, ""),
+    own_product=("N", "D", UNKNOWN,
+                 "Business model (per its own about page's disclosed affiliate/advertorial monetization and its "
+                 "recorded primary_niche as a review/buying-guide publisher) is advertising/affiliate-driven media; "
+                 "no own-product offering was identified."),
     course_or_community=("UNKNOWN", UNKNOWN, UNKNOWN, ""),
     newsletter_email_capture=("Y", "A", "https://www.tomsguide.com/reference/about-us", "About page lists multiple named newsletters (Tom's Guide Daily, Tom's AI Guide, etc.)."),
 ))
@@ -912,7 +934,10 @@ rows.append(row(
     revenue_value=UNKNOWN, revenue_note="Future plc bought Purch's consumer brands (which included TopTenReviews) for ~$132M in 2018 (https://www.adexchanger.com/publishers/future-plc-plots-future-after-132m-purch-acquisition/, tier B) -- a company-bundle acquisition price, not a site-specific revenue figure.",
     display_ads=("UNKNOWN", UNKNOWN, UNKNOWN, "Not independently confirmed this pass (only a tracking pixel and newsletter form observed on homepage fetch)."),
     affiliate=("Y", "D", UNKNOWN, "Site mission language (\"helping users buy better\") plus membership in Future plc's affiliate-driven brand family; no explicit on-page disclosure text was captured this pass."),
-    own_product=("N", "D", UNKNOWN, ""),
+    own_product=("N", "D", UNKNOWN,
+                 "Business model (per its recorded primary_niche as a broad multi-category buying-guide publisher "
+                 "and its inferred affiliate-driven monetization) is advertising/affiliate-driven media; no "
+                 "own-product offering was identified."),
     course_or_community=("UNKNOWN", UNKNOWN, UNKNOWN, ""),
     newsletter_email_capture=("Y", "C", "https://www.toptenreviews.com/", "\"Sign up to our newsletter\" directly observed in site header."),
 ))
@@ -979,7 +1004,10 @@ rows.append(row(
     revenue_value=UNKNOWN, revenue_note="No disclosed figures found.",
     display_ads=("Y", "A", "https://runrepeat.com/about", "About page: \"We also have ads to support our operations.\""),
     affiliate=("Y", "A", "https://runrepeat.com/about", "About page: \"If you click through to the retailer and you buy the shoe, we get an affiliate commission on the sale\"; also states Amazon Associates membership."),
-    own_product=("N", "D", UNKNOWN, ""),
+    own_product=("N", "D", UNKNOWN,
+                 "Business model (per its own about page's disclosed ad/affiliate monetization and its recorded "
+                 "primary_niche as a review/wear-testing publisher) is advertising/affiliate-driven media; no "
+                 "own-product offering was identified."),
     course_or_community=("UNKNOWN", UNKNOWN, UNKNOWN, ""),
     newsletter_email_capture=("UNKNOWN", UNKNOWN, UNKNOWN, "Not observed this pass."),
 ))
@@ -1060,6 +1088,9 @@ rows.append(row(
     "Meta-review aggregator (compiled/synthesized reviews across ~250 product categories)",
     "Contrast Cohort",
     is_niche_authority="N", is_niche_authority_evidence="D",
+    is_niche_authority_note="Site's own recorded primary_niche is a meta-review aggregator spanning ~250 broad "
+                             "product categories, not a narrow niche authority, and the domain no longer functions "
+                             "as a review site at all (contrast_pattern=shutdown).",
     is_contrast_case="Y", is_contrast_case_evidence="C", is_contrast_case_url="https://consumersearch.com/",
     is_contrast_case_note="Fetching consumersearch.com live on 2026-09-17 returned not a review site but an unrelated farewell/memorial page for Ask.com (\"After 30 years of answering the world's questions, Ask.com officially closed on May 1, 2026\"), indicating the domain has been repurposed/consolidated by its current corporate owner (IAC) and the original ConsumerSearch review-site brand no longer resolves at this URL at all. The exact year ConsumerSearch itself stopped publishing new reviews is UNKNOWN and not asserted.",
     contrast_pattern="shutdown", contrast_evidence_period="Acquired by About.com/New York Times Co. in 2007; domain now resolves to an unrelated Ask.com closure notice as observed 2026-09-17.",
@@ -1082,6 +1113,8 @@ print("Applied evidence_harden.harden_rows() (pre-950 hardening pass) to all 40 
 
 domains = [r["canonical_root_domain"] for r in rows]
 assert len(domains) == len(set(domains)), f"Duplicate domains within the 40: {[d for d in domains if domains.count(d) > 1]}"
+
+schema_extend.extend_rows_with_production_schema(rows, start_index=10)
 
 with open(OUT_40, "w", newline="", encoding="utf-8") as f:
     w = csv.DictWriter(f, fieldnames=FIELDNAMES)

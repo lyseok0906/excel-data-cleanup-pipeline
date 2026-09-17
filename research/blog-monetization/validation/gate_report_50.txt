@@ -92,9 +92,9 @@ Sites flagged as whole-domain (excluded from content-level traffic_tier comparis
 Example of dimension mismatch surfaced (stratum=Large/Traffic Leader but traffic_tier=LOW): ['asianefficiency.com']
 
 --- 10. Denominator automation test ---
-  affiliate: 27 of 31 confirmed = Y (direct column filter, no parsing)
+  affiliate: 27 of 30 confirmed = Y (direct column filter, no parsing)
   display_ads: 14 of 31 confirmed = Y (direct column filter, no parsing)
-  own_product: 27 of 40 confirmed = Y (direct column filter, no parsing)
+  own_product: 24 of 36 confirmed = Y (direct column filter, no parsing)
   is_niche_authority: 25 of 49 confirmed = Y (direct column filter, no parsing)
   is_contrast_case: 12 of 49 confirmed = Y (direct column filter, no parsing)
 PASS: denominators computable via direct column filter across all migrated fields.
