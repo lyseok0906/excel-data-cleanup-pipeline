@@ -93,11 +93,14 @@ def check_duplicates(rows):
 
 def check_provenance(rows):
     """
-    Section 7 item 4, hardened: for every evidence-bearing field, if
-    evidence is A or B, the field's DEDICATED `_source_url` column must
-    itself be a valid http(s) URL. A URL merely mentioned inside the
-    free-text `_note` field does NOT satisfy this check -- Protocol V2
-    Section 3 explicitly prohibits hiding provenance in note text.
+    Section 7 item 4, hardened (pre-950 round): for every evidence-bearing
+    field, if evidence is A, B, OR C, the field's DEDICATED `_source_url`
+    column must itself be a valid http(s) URL. A URL merely mentioned
+    inside the free-text `_note` field does NOT satisfy this check --
+    Protocol V2 Section 3 explicitly prohibits hiding provenance in note
+    text. C was added to this check in the pre-950 hardening round: a
+    "researcher's own direct observation" (C) is inherently about a
+    specific page, so it must name that page too, not just A/B claims.
     """
     missing = []
     field_url_pairs = [(f, f + "_source_url", f + "_evidence") for f in BOOL_FIELDS] + [
@@ -108,11 +111,76 @@ def check_provenance(rows):
     for r in rows:
         for base, urlfield, evfield in field_url_pairs:
             ev = r[evfield].strip()
-            if ev in ("A", "B"):
+            if ev in ("A", "B", "C"):
                 url = r.get(urlfield, "").strip()
                 if not URL_RE.match(url):
                     missing.append((r["canonical_root_domain"], base, ev, url))
     return missing
+
+
+def check_evidence_note_for_d(rows):
+    """
+    Pre-950 hardening addition: evidence == D (a reasoned inference) must
+    always carry a non-empty note explaining the reasoning -- a D-tier
+    claim with no note is an unexplained guess, which Protocol V2 does
+    not allow.
+    """
+    missing = []
+    field_note_pairs = [(f, f + "_note", f + "_evidence") for f in BOOL_FIELDS] + [
+        ("traffic", "traffic_note", "traffic_evidence"),
+        ("revenue", "revenue_note", "revenue_evidence"),
+        ("start_year", "start_year_note", "start_year_evidence"),
+    ]
+    for r in rows:
+        for base, notefield, evfield in field_note_pairs:
+            ev = r[evfield].strip()
+            if ev == "D" and not r.get(notefield, "").strip():
+                missing.append((r["canonical_root_domain"], base, ev))
+    return missing
+
+
+def check_value_requires_evidence(rows):
+    """
+    Pre-950 hardening addition (the directional complement of Rule #8):
+    a non-UNKNOWN value must never carry UNKNOWN evidence. Rule #8 (item 6
+    below) already checks the other direction (UNKNOWN value -> UNKNOWN
+    evidence); this check closes the gap so a value can never be
+    asserted without SOME evidence tier backing it.
+    """
+    violations = []
+    pairs = [(f, f + "_evidence") for f in BOOL_FIELDS] + [
+        ("traffic_value_raw", "traffic_evidence"),
+        ("revenue_value", "revenue_evidence"),
+        ("start_year_value", "start_year_evidence"),
+    ]
+    for r in rows:
+        for vf, ef in pairs:
+            v = r[vf].strip()
+            ev = r[ef].strip()
+            if v != "UNKNOWN" and ev == "UNKNOWN":
+                violations.append((r["canonical_root_domain"], vf, v, ef, ev))
+    return violations
+
+
+REVENUE_VALUE_RE = re.compile(r"^\$?[\d,]+(\.\d+)?\s?[KMB]?(/(month|year|mo|yr))?$", re.IGNORECASE)
+
+
+def check_revenue_value_format(rows):
+    """
+    Pre-950 hardening addition: Study A's revenue_value must be either the
+    literal string UNKNOWN, or a single clean structured figure (an
+    optional $ sign, digits, an optional K/M/B suffix, an optional single
+    /month or /year unit). Free-text descriptions, compound multi-period
+    figures, and acquisition/purchase prices must NOT populate
+    revenue_value -- they belong in revenue_note only. This check is a
+    structural guard for the "Study A is not a revenue study" policy.
+    """
+    bad = []
+    for r in rows:
+        v = r["revenue_value"].strip()
+        if v != "UNKNOWN" and not REVENUE_VALUE_RE.match(v):
+            bad.append((r["canonical_root_domain"], v))
+    return bad
 
 
 def check_dates(rows):
@@ -281,7 +349,39 @@ def run_gate(rows):
     lines.append("PASS: denominators computable via direct column filter across all migrated fields.")
     lines.append("")
 
-    lines.append("A0-Phase1 FINAL PASS" if all_passed else "A0-Phase1 GATE FAILED -- see violations above")
+    section("11. Value/evidence directional consistency (non-UNKNOWN value requires non-UNKNOWN evidence)")
+    v = check_value_requires_evidence(rows)
+    if v:
+        all_passed = False
+        lines.append(f"FAIL: {len(v)} fields have an asserted value but UNKNOWN evidence:")
+        lines.extend(f"  {x}" for x in v)
+    else:
+        lines.append("PASS: every field with a non-UNKNOWN value carries a real (non-UNKNOWN) evidence tier.")
+    lines.append("")
+
+    section("12. D-tier evidence must carry a note")
+    v = check_evidence_note_for_d(rows)
+    if v:
+        all_passed = False
+        lines.append(f"FAIL: {len(v)} D-tier fields have an empty note:")
+        lines.extend(f"  {x}" for x in v)
+    else:
+        lines.append("PASS: every D-tier (reasoned inference) field has a non-empty note explaining the reasoning.")
+    lines.append("")
+
+    section("13. revenue_value format/type check (Study A is not a revenue study)")
+    v = check_revenue_value_format(rows)
+    if v:
+        all_passed = False
+        lines.append(f"FAIL: {len(v)} revenue_value cells are not UNKNOWN or a single clean structured figure:")
+        lines.extend(f"  {x}" for x in v)
+    else:
+        lines.append("PASS: every revenue_value is either UNKNOWN or a single clean structured figure "
+                      "(no free text, no compound multi-period figures, no acquisition/purchase prices).")
+    lines.append("")
+
+    lines.append(f"VALIDATION GATE PASS -- rows={len(rows)}" if all_passed
+                 else f"VALIDATION GATE FAILED -- rows={len(rows)} -- see violations above")
     return lines, all_passed
 
 

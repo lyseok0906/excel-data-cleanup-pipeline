@@ -32,6 +32,7 @@ import csv
 from pathlib import Path
 
 import domain_utils
+import evidence_harden
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_SRC = HERE.parent / "validation_10.csv"
@@ -220,7 +221,7 @@ def build_rows(old: dict) -> list:
             d[field + "_evidence"] = ev
             d[field + "_source_url"] = url
             d[field + "_note"] = note
-        rows.append(d)
+        rows.append(evidence_harden.harden_row(d))
 
     # ---- 1. thomasjfrank.com ----
     o = old["thomasjfrank.com"]
@@ -234,9 +235,9 @@ def build_rows(old: dict) -> list:
         "118600", "trailing_3_months", "Similarweb snapshot dated August 2026", "B",
         "https://www.similarweb.com/website/thomasjfrank.com/",
         "Global rank #345,634 at lookup; 25.66% MoM decline observed at time of lookup (single-month reading). Similarweb free-tier estimates are directional only.",
-        "~$175,000/month (recent), $2.1M over 2021-2023 from templates", "2021-2023 (cumulative), recent monthly figure as of 2023 interview",
-        "A", "https://www.starterstory.com/stories/thomas-frank",
-        "Self-reported by Thomas Frank in a Starter Story interview: ~$120K/mo template sales + ~$15K/mo affiliate/AdSense + $1,200/mo Pipedream affiliate. Coded A: figures attributed directly to the operator's own words, even though published via a third-party interview site.",
+        "UNKNOWN", "2021-2023 (cumulative), recent monthly figure as of 2023 interview",
+        "UNKNOWN", "UNKNOWN",
+        "[pre-950 hardening] revenue_value normalized to UNKNOWN per the Study A revenue-field policy: Study A does not treat compound/fragmentary self-reported figures spanning multiple periods as a single structured revenue_value. The original figures are preserved here for context only, not as a structured value: self-reported by Thomas Frank in a Starter Story interview (https://www.starterstory.com/stories/thomas-frank) -- ~$120K/mo template sales + ~$15K/mo affiliate/AdSense + $1,200/mo Pipedream affiliate, plus a separate cumulative claim of ~$2.1M over 2021-2023 from templates and a 'recent' ~$175,000/month figure. These would have been A-tier (operator's own words, via a third-party interview) if Study A used a structured revenue field, but per the current policy any Study-B-style deep revenue reconstruction is out of scope for Study A.",
         {
             "display_ads": bool_field(o, "display_ads"),
             "affiliate": bool_field(o, "affiliate", source_url="https://www.starterstory.com/stories/thomas-frank"),
@@ -332,10 +333,10 @@ def build_rows(old: dict) -> list:
         "N", "D", "", "Not treated as contrast case; content/YouTube channel appear ongoing per search hits, but this is an inference given incomplete direct access (robots.txt blocked).",
         "NOT_APPLICABLE", "",
         "2017", "A", "Founder Francesco D'Alessio quoted directly: 'We started Keep Productive in late 2017, after 3 previous years on YouTube.'",
-        "Similarweb", "total visits", "UNKNOWN",
+        "Similarweb", "total visits", "CONTENT_ONLY",
         "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN",
         "https://www.similarweb.com/website/keepproductive.com/",
-        "Similarweb free overview returned 'No Data to Display'; robots.txt also blocked direct site fetch. Genuinely unknown from available tools -- left UNKNOWN per schema rules rather than guessed.",
+        "Similarweb free overview returned 'No Data to Display'; robots.txt also blocked direct site fetch. Genuinely unknown from available tools -- left UNKNOWN per schema rules rather than guessed. [pre-950 hardening] traffic_scope reclassified from UNKNOWN to CONTENT_ONLY: this is a domain-structure judgment (keepproductive.com is a Notion/productivity review + YouTube-linked creator site, not a SaaS/app domain), independent of the fact that no traffic NUMBER could be obtained -- Section 3-6 traffic_scope and the traffic value itself are separate axes.",
         "UNKNOWN", "UNKNOWN",
         "UNKNOWN", "",
         "No self-published revenue figures found.",

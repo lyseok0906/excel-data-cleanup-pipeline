@@ -21,6 +21,7 @@ import csv
 from pathlib import Path
 
 import migrate_schema  # reuse FIELDNAMES + traffic_tier_for + round_monthly
+import evidence_harden
 
 HERE = Path(__file__).resolve().parent
 OUT_40 = HERE.parent / "a0_phase2_40.csv"
@@ -61,7 +62,8 @@ def traffic_block(provider, metric, scope, raw, raw_period, monthly, norm_method
 
 def row(canonical_root_domain, site_name, primary_niche, sampling_stratum,
         is_niche_authority, is_niche_authority_note="", is_niche_authority_evidence=UNKNOWN, is_niche_authority_url=UNKNOWN,
-        is_contrast_case="N", is_contrast_case_evidence=UNKNOWN, is_contrast_case_url=UNKNOWN, is_contrast_case_note="",
+        is_contrast_case="N", is_contrast_case_evidence="D", is_contrast_case_url=UNKNOWN,
+        is_contrast_case_note="No verified contrast-pattern evidence (traffic decline, cadence drop, shutdown, etc.) was found for this site during this research pass; defaulted to N.",
         contrast_pattern="NOT_APPLICABLE", contrast_evidence_period="",
         start_year="UNKNOWN", start_year_evidence=UNKNOWN, start_year_url=UNKNOWN, start_year_note="",
         traffic=None,
@@ -260,7 +262,7 @@ rows.append(row(
     start_year="2010", start_year_evidence="C", start_year_url="https://powerpivotpro.com/2010/03/the-great-broken-links/",
     start_year_note="My own observation of a dated archived post URL confirms the blog existed by March 2010; exact launch date not confirmed, treated as a lower bound.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "total visits", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot dated August 2026", "B",
         "https://www.similarweb.com/website/powerpivotpro.com/",
         "Similarweb page returned blank/dash placeholders for all metrics (\"insufficient data\" state); numeric value left UNKNOWN rather than guessed.",
@@ -286,9 +288,8 @@ rows.append(row(
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot dated June 2026", "B",
         "https://www.similarweb.com/website/benlcollins.com/", "",
     ),
-    revenue_value="~$3,500-4,000/month recurring course revenue (historical)", revenue_figure_period="per a Medium interview, exact date unconfirmed, likely several years old",
-    revenue_evidence="A", revenue_url="https://medium.com/the-business-of-content/this-google-spreadsheets-guru-makes-4-000-a-month-on-online-courses-bcda90ddd9e1",
-    revenue_note="Operator quoted directly in a third-party interview: \"$3,500 to $4,000 worth of online courses a month\" recurring, plus \"just shy of $8,000\" in a single launch week from 89 sales. Treated as historical, not current.",
+    revenue_value=UNKNOWN, revenue_figure_period="per a Medium interview, exact date unconfirmed, likely several years old",
+    revenue_note="Operator quoted directly in a third-party interview (https://medium.com/the-business-of-content/this-google-spreadsheets-guru-makes-4-000-a-month-on-online-courses-bcda90ddd9e1, tier A): \"$3,500 to $4,000 worth of online courses a month\" recurring, plus \"just shy of $8,000\" in a single launch week from 89 sales. Treated as historical, not current. [pre-950 hardening] revenue_value normalized to UNKNOWN per the Study A revenue-field policy: a compound/range figure spanning an unconfirmed historical period is not a single structured revenue_value -- preserved here in revenue_note only.",
     display_ads=("N", "D", UNKNOWN, "No display ads noted; site is course/newsletter-monetized."),
     affiliate=("UNKNOWN", UNKNOWN, UNKNOWN, "Searched for disclosure but did not find a confirming source this pass."),
     own_product=("Y", "A", "https://www.benlcollins.com/about/", "\"The Collins School of Data\" -- multiple paid courses (Modern Google Sheets, Sheets Insiders membership, Apps Script, QUERY function, Lambda functions, etc.)."),
@@ -306,7 +307,7 @@ rows.append(row(
     is_contrast_case_note="A reader comment thread found via search implies encouragement to \"resume blogging\" (possible cadence drop), but no exact date range for a slowdown could be confirmed -- not confident enough to assert as a contrast case, so left UNKNOWN rather than guessed Y or N.",
     start_year=UNKNOWN, start_year_note="Could not confirm an exact founding year this pass.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "total visits", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot dated August 2026", "B",
         "https://www.similarweb.com/website/excelxor.com/",
         "Similarweb page returned no numeric total-visits figure (dashes/blank, \"insufficient data\" state).",
@@ -330,7 +331,7 @@ rows.append(row(
     start_year="2000", start_year_evidence="A", start_year_url="https://ozgrid.com/",
     start_year_note="Own about page: \"founded by husband and wife team, Dave and Raina Hawley in 2000\".",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "total visits", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot dated July 2026", "B",
         "https://www.similarweb.com/website/ozgrid.com/",
         "Similarweb page shows no explicit visit-count number (dashes for engagement metrics, \"0% change vs last month\" stated).",
@@ -354,7 +355,7 @@ rows.append(row(
     start_year="2006", start_year_evidence="A", start_year_url="https://spreadsheetpage.com/about/",
     start_year_note="Own about page: \"Started as a hobby site in 2006, The Spreadsheet Page grew to be one of the most popular excel template resources\". Historical Walkenbach connection unverified this pass.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "total visits", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot dated June 2026", "B",
         "https://www.similarweb.com/website/spreadsheetpage.com/",
         "Page did not display a numeric total-visits figure but stated a 402.4% increase vs previous month, 38.77% bounce rate, 1.79 pages/visit -- numeric total left UNKNOWN rather than guessed.",
@@ -388,8 +389,8 @@ rows.append(row(
         "Site also self-reports \"~550,000 organic pageviews/month\" and historically \"1.5 million organic pageviews/month\" "
         "(tier A, https://www.financialsamurai.com/how-much-do-bloggers-make-a-lot-more-than-you-think/), not reconciled with the Similarweb figure.",
     ),
-    revenue_value="UNKNOWN (only partial historical figures found)", revenue_figure_period="various, dated (2019-era post)",
-    revenue_evidence="UNKNOWN", revenue_note="Partial self-reported figures found (book \"$4,000-5,000/month\", one sponsored post \"$30,000\", consulting once \"$30,000/month\", all historical/dated) but no comprehensive current site-revenue total disclosed -- overall figure left UNKNOWN rather than assembled from fragments. Source: https://www.financialsamurai.com/how-much-do-bloggers-make-a-lot-more-than-you-think/ (tier A for the fragments themselves).",
+    revenue_value=UNKNOWN, revenue_figure_period="various, dated (2019-era post)",
+    revenue_note="Partial self-reported figures found (book \"$4,000-5,000/month\", one sponsored post \"$30,000\", consulting once \"$30,000/month\", all historical/dated) but no comprehensive current site-revenue total disclosed -- overall figure left UNKNOWN rather than assembled from fragments. Source: https://www.financialsamurai.com/how-much-do-bloggers-make-a-lot-more-than-you-think/ (tier A for the fragments themselves). [pre-950 hardening] revenue_value normalized to a clean UNKNOWN (was previously the descriptive string \"UNKNOWN (only partial historical figures found)\") per the Study A revenue-field policy: revenue_value must be either a single structured figure or exactly UNKNOWN, never a hybrid value+explanation string -- the explanation stays here in revenue_note.",
     display_ads=("Y", "A", "https://www.financialsamurai.com/about/", "Works with CafeMedia per own About page."),
     affiliate=("Y", "A", "https://www.financialsamurai.com/about/", "Fundrise, Empower, Policygenius, Amazon Associates disclosed."),
     own_product=("Y", "A", "https://www.financialsamurai.com/about/", "3 published books plus \"How to Engineer Your Layoff\" ebook (6th ed.)."),
@@ -409,7 +410,7 @@ rows.append(row(
     start_year="2006", start_year_evidence="A", start_year_url="https://www.getrichslowly.org/how-and-why-i-sold-get-rich-slowly/",
     start_year_note="Founder's own post gives the founding date as 2006-04-15.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "total visits", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot dated July 2026", "B",
         "https://www.similarweb.com/website/getrichslowly.org/",
         "A clean single \"Total Visits Last 3 Months\" number could not be reliably extracted from the fetched summary (only an ambiguous \"47.3K\" comparison figure appeared) -- left UNKNOWN rather than reporting a possibly-wrong number.",
@@ -477,7 +478,7 @@ rows.append(row(
     start_year="2008", start_year_evidence="A", start_year_url="https://www.dividendgrowthinvestor.com/2018/01/investing-lessons-learned-from-ten.html",
     start_year_note="Author's own post states \"Today marks the 15th birthday of the Dividend Growth Investor blog\" (dated Jan 2023, implying 2008 start); footer copyright also reads 2008-2023.",
     traffic=traffic_block(
-        "Similarweb", "global rank change only", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "global rank change only", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/dividendgrowthinvestor.com/",
         "Only global-rank change was legible (rank improved ~2.7M to ~2.4M over 3 months, \"Last Month Change: 35.32%\"); no clean absolute visits total extracted -- left UNKNOWN. Rank in the 2-3 million range indicates a genuinely small/niche site.",
@@ -500,7 +501,7 @@ rows.append(row(
     start_year="2014", start_year_evidence="A", start_year_url="https://frugalwoods.com/2023/04/07/reflecting-on-nine-years-of-frugalwoods/",
     start_year_note="Self-stated: \"When I started Frugalwoods on April 9, 2014, I had just turned 30\".",
     traffic=traffic_block(
-        "Similarweb", "total visits (ambiguous)", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "total visits (ambiguous)", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/frugalwoods.com/",
         "Only an ambiguous \"14K\" comparison figure surfaced with no clear period label -- left UNKNOWN rather than reporting a possibly-wrong number.",
@@ -523,7 +524,7 @@ rows.append(row(
     start_year="2016", start_year_evidence="A", start_year_url="https://esimoney.com/about/",
     start_year_note="Own About page: \"I started ESI Money shortly before I retired\" (retirement occurred fall 2016, confirmed via a separate own post \"I Retired!!!\").",
     traffic=traffic_block(
-        "Similarweb", "total visits (ambiguous)", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "total visits (ambiguous)", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/esimoney.com/",
         "Numbers were not cleanly extractable (\"21.2K\" appeared as an ambiguous/placeholder figure); \"traffic increased by 28.67% month-over-month\" was legible -- absolute visits left UNKNOWN.",
@@ -547,7 +548,7 @@ rows.append(row(
     start_year="2008", start_year_evidence="A", start_year_url="https://budgetsaresexy.com/about/",
     start_year_note="Own About page: \"back in 2008 in my 20s\" (stated Feb 2008).",
     traffic=traffic_block(
-        "Similarweb", "total visits (ambiguous)", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "total visits (ambiguous)", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/budgetsaresexy.com/",
         "Only an ambiguous \"65.2K\" comparison figure surfaced with unclear period -- left UNKNOWN.",
@@ -593,7 +594,7 @@ rows.append(row(
     contrast_pattern="cadence_drop", contrast_evidence_period="Weekly/near-daily posting 2013-2016 per own archive pattern vs. quarterly \"Performance Update\" posts by 2020-2025 (e.g. Q1 2025 update); 22.53% MoM traffic decline per Similarweb, lookup 2026-09-17.",
     start_year=UNKNOWN, start_year_note="Site clearly predates 2016 based on early archive content, but no stated founding year found with a citable URL this pass.",
     traffic=traffic_block(
-        "Similarweb", "total visits (ambiguous)", UNKNOWN, UNKNOWN, "", UNKNOWN, "",
+        "Similarweb", "total visits (ambiguous)", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
         "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/1500days.com/",
         "Ambiguous \"19.4K\" comparison figure with \"traffic decreased 22.53% compared to last month\" -- decline direction legible, absolute total left UNKNOWN.",
@@ -621,7 +622,7 @@ rows.append(row(
     start_year="2004", start_year_evidence="B", start_year_url="https://en.wikipedia.org/wiki/Apartment_Therapy",
     start_year_note="Founder Maxwell Ryan turned his 2001 design-consultancy newsletter into a daily blog with brother Oliver in 2004, per Wikipedia.",
     traffic=traffic_block(
-        "Similarweb", "total visits", "WHOLE_DOMAIN_INCLUDES_PRODUCT", 6400000, "trailing_3_months", round(6400000/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 6400000, "trailing_3_months", round(6400000/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/apartmenttherapy.com/",
         "Down 15% vs prior month, global rank #10,977.",
@@ -643,7 +644,7 @@ rows.append(row(
     is_contrast_case="N", is_contrast_case_evidence="D",
     start_year=UNKNOWN, start_year_note="Wikipedia excerpt fetched did not state an explicit founding year; commonly cited elsewhere as ~2006 but not verified with a direct URL this pass, so left UNKNOWN rather than guessed.",
     traffic=traffic_block(
-        "Similarweb", "total visits", "WHOLE_DOMAIN_INCLUDES_PRODUCT", 22600000, "trailing_3_months", round(22600000/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 22600000, "trailing_3_months", round(22600000/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/seriouseats.com/",
         "Down 5.96% vs prior month, global rank ~2,520.",
@@ -667,7 +668,11 @@ rows.append(row(
     contrast_pattern="shutdown", contrast_evidence_period="Site closed by founder's own decision, announced/effective Aug 30, 2019.",
     start_year="2004", start_year_evidence="B", start_year_url="https://businessofhome.com/articles/behind-grace-bonney-s-decision-to-close-design-sponge",
     start_year_note="Business of Home reports the site closed \"15 years\" after its launch, with closure announced in 2019, implying a ~2004 launch.",
-    traffic=None,
+    traffic=traffic_block(
+        "Similarweb", "total visits", "CONTENT_ONLY", UNKNOWN, "", UNKNOWN, "",
+        "", UNKNOWN, UNKNOWN,
+        "No current traffic figure sought since the domain is inactive as an original content property (closed Aug 30, 2019). traffic_scope is nonetheless CONTENT_ONLY as a domain-structure judgment (Design*Sponge was historically a content/media property, not a SaaS/app domain) -- independent of the fact that no current traffic value applies. [pre-950 hardening] scope reclassified from a bare UNKNOWN default to CONTENT_ONLY per the corrected traffic_scope definition (domain structure, not data availability).",
+    ),
     revenue_value=UNKNOWN, revenue_note="No dollar figures disclosed. At peak, founder self-reported \"over 2 million readers per month\" (tier A, quoted in the Business of Home piece) -- an audience figure, not revenue.",
     display_ads=("UNKNOWN", UNKNOWN, UNKNOWN, "Site inactive since Aug 30, 2019; not assessed."),
     affiliate=("UNKNOWN", UNKNOWN, UNKNOWN, ""),
@@ -711,7 +716,7 @@ rows.append(row(
     start_year="2009", start_year_evidence="C", start_year_url="https://www.shanty-2-chic.com/about/",
     start_year_note="Own about content states the site launched in August 2009.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 40300, "trailing_3_months", round(40300/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 40300, "trailing_3_months", round(40300/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/shanty-2-chic.com/",
         "Down 1.82% vs prior month; category rank #312 Home Improvement (US).",
@@ -735,7 +740,7 @@ rows.append(row(
     start_year="2009", start_year_evidence="C", start_year_url="https://tinyhousetalk.com/about/",
     start_year_note="Own about page states founding by Alex Pino in 2009 (my own direct observation of the page).",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 99500, "trailing_3_months", round(99500/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 99500, "trailing_3_months", round(99500/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/tinyhousetalk.com/",
         "Down 3.57% vs prior month, global rank #406,197, category #1,727 Home & Garden.",
@@ -758,7 +763,7 @@ rows.append(row(
     start_year="2012", start_year_evidence="B", start_year_url="https://www.nichepursuits.com/love-and-lemons-success-story/",
     start_year_note="Third-party profile: \"Since the site started in 2012...\".",
     traffic=traffic_block(
-        "Similarweb", "total visits", "WHOLE_DOMAIN_INCLUDES_PRODUCT", 13800000, "trailing_3_months", round(13800000/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 13800000, "trailing_3_months", round(13800000/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/loveandlemons.com/",
         "Up 4.25% vs prior month, category rank #16 Cooking & Recipes (US). A third-party profile separately cited \"10M visitors/month\" as of 2022/2023 (tier B, different period, https://www.nichepursuits.com/love-and-lemons-success-story/), not reconciled with this snapshot.",
@@ -782,7 +787,7 @@ rows.append(row(
     start_year="2012", start_year_evidence="C", start_year_url="https://www.theperfectloaf.com/about/",
     start_year_note="Own about page states the site was \"established in 2012\".",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 475000, "trailing_3_months", round(475000/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 475000, "trailing_3_months", round(475000/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/theperfectloaf.com/",
         "Down 25.56% vs prior month, global rank fell #91,021 to #112,350.",
@@ -803,7 +808,7 @@ rows.append(row(
     start_year="2010", start_year_evidence="A", start_year_url="https://www.afarmgirlsdabbles.com/about/",
     start_year_note="Operator's own statement: \"I started A Farmgirl's Dabbles in 2010\".",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 215900, "trailing_3_months", round(215900/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 215900, "trailing_3_months", round(215900/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/afarmgirlsdabbles.com/",
         "Down 16.41% vs prior month, global rank fell #198,515 to #224,964. Borderline decline signal, but not selected as the primary contrast case for this batch.",
@@ -826,7 +831,7 @@ rows.append(row(
     start_year="2006", start_year_evidence="C", start_year_url="https://thewoodwhisperer.com/about/",
     start_year_note="Own about page states founding by Marc Spagnuolo in 2006 (my own direct observation of the page).",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 121500, "trailing_3_months", round(121500/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 121500, "trailing_3_months", round(121500/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot, lookup 2026-09-17", "B",
         "https://www.similarweb.com/website/thewoodwhisperer.com/",
         "Up 5.58% vs prior month. Note: Similarweb mis-categorized this site under \"Social Media Networks\" -- likely a data-quality quirk on Similarweb's side, flagged for transparency.",
@@ -855,7 +860,7 @@ rows.append(row(
     start_year="1982", start_year_evidence="B", start_year_url="https://en.wikipedia.org/wiki/PCMag",
     start_year_note="Founded 1982 as PC Magazine (print); went online-only Jan 2009, per Wikipedia and corroborating Forbes 2008 coverage of the print shutdown.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 11400000, "trailing_3_months", round(11400000/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 11400000, "trailing_3_months", round(11400000/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot dated ~August 2026", "B",
         "https://www.similarweb.com/website/pcmag.com/",
         "traffic_scope left UNKNOWN rather than guessed CONTENT_ONLY -- PCMag hosts software/VPN test tools that may not be separable from editorial content traffic.",
@@ -876,7 +881,7 @@ rows.append(row(
     start_year="2007", start_year_evidence="B", start_year_url="https://en.wikipedia.org/wiki/Tom%27s_Guide",
     start_year_note="Founded 2007 by Bestofmedia, per Wikipedia; ownership chain (Bestofmedia to TechMediaNetwork 2013 to Purch 2014 to Future 2018) corroborated by Tom's Guide's own About Us page.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 15300000, "trailing_3_months", round(15300000/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 15300000, "trailing_3_months", round(15300000/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot dated ~August 2026", "B",
         "https://www.similarweb.com/website/tomsguide.com/", "traffic_scope left UNKNOWN, not independently confirmed as content-only vs. whole-domain this pass.",
     ),
@@ -898,7 +903,7 @@ rows.append(row(
     is_contrast_case_note="Not formally flagged as contrast despite an unusually low, declining Similarweb figure (59.3K visits, -22.39% MoM) for a brand of this history -- kept as Large/Traffic Leader per its brand recognition, with the traffic anomaly flagged rather than asserted as a verified decline pattern (no independent trend data captured beyond a single snapshot).",
     start_year=UNKNOWN, start_year_note="Crunchbase founding date is redacted/obfuscated; Wikipedia entry exists but did not yield a founding year in this session's fetch.",
     traffic=traffic_block(
-        "Similarweb", "total visits (most-recent-month figure)", UNKNOWN, 59300, UNKNOWN, UNKNOWN,
+        "Similarweb", "total visits (most-recent-month figure)", "CONTENT_ONLY", 59300, UNKNOWN, UNKNOWN,
         "Reported as a most-recent-month figure rather than a clean 3-month total; not normalized to avoid guessing the period.",
         "Similarweb snapshot dated ~June 2026", "B",
         "https://www.similarweb.com/website/toptenreviews.com/",
@@ -922,7 +927,7 @@ rows.append(row(
     start_year="2007", start_year_evidence="A", start_year_url="https://www.gearpatrol.com/about/about-gear-patrol/",
     start_year_note="Own About page: founded 2007 by Eric Yang and Ben Bowers.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 7800000, "trailing_3_months", round(7800000/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 7800000, "trailing_3_months", round(7800000/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot dated ~August 2026", "B",
         "https://www.similarweb.com/website/gearpatrol.com/",
         "Corroborating self-reported figures: \"over 4.8 million monthly readers\" (own About page, tier A) and founder-cited \"5.5 million unique monthly visitors\" in a Digiday interview (tier A, period unspecified, https://digiday.com/media/gear-patrol-founder-eric-yang-media-ecommerce-tech-products/) -- not reconciled with the Similarweb figure.",
@@ -945,7 +950,7 @@ rows.append(row(
     start_year="2017", start_year_evidence="A", start_year_url="https://vacuumwars.com/about/",
     start_year_note="Own about page states 2017.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 672600, "trailing_3_months", round(672600/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 672600, "trailing_3_months", round(672600/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot dated ~July 2026", "B",
         "https://vacuumwars.com/about/",
         "Corroborating third-party marketing case study claims \"1,046% traffic growth in 3 months\" (https://aioseo.com/trends/vacuum-wars-seo-case-study/, tier B) -- supports an active-growth trajectory rather than decline.",
@@ -967,7 +972,7 @@ rows.append(row(
     is_contrast_case="N", is_contrast_case_evidence="D",
     start_year=UNKNOWN, start_year_note="About page and search results did not surface an explicit founding year for founder Jens Jakob Andersen's site (RunRepeat ApS, Denmark).",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 7600000, "trailing_3_months", round(7600000/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 7600000, "trailing_3_months", round(7600000/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot dated ~July 2026", "B",
         "https://www.similarweb.com/website/runrepeat.com/", "",
     ),
@@ -989,7 +994,7 @@ rows.append(row(
     start_year="2013", start_year_evidence="C", start_year_url="http://www.prweb.com/releases/2013/2/prweb10485911.htm",
     start_year_note="Earliest verifiable activity found is a Feb 2013 PRWeb press release (\"BabyGearLab.com Announces 2013 Best Baby Carrier Review Awards\"), used as a floor/lower-bound rather than a confirmed founding date.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 451900, "trailing_3_months", round(451900/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 451900, "trailing_3_months", round(451900/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot dated ~May 2026", "B",
         "https://www.similarweb.com/website/babygearlab.com/", "",
     ),
@@ -1011,7 +1016,7 @@ rows.append(row(
     start_year="2015", start_year_evidence="B", start_year_url="https://www.blexr.com/brewing-up-success-with-home-grounds-coffee-site/",
     start_year_note="Acquirer Blexr's own acquisition writeup states 2015, corroborated by the site's own About page.",
     traffic=traffic_block(
-        "Similarweb", "total visits", "WHOLE_DOMAIN_INCLUDES_PRODUCT", 56800, "trailing_3_months", UNKNOWN,
+        "Similarweb", "total visits", "CONTENT_ONLY", 56800, "trailing_3_months", UNKNOWN,
         "Similarweb's free public page did not expose a clean monthly-average figure without login; reporting the raw 3-month total as shown rather than inferring a monthly split.",
         "Similarweb snapshot dated August 2026", "C",
         "https://www.similarweb.com/website/homegrounds.co/",
@@ -1037,7 +1042,7 @@ rows.append(row(
     start_year="1997", start_year_evidence="A", start_year_url="https://the-gadgeteer.com/2022/09/16/the-gadgeteer-is-25-years-old-have-you-been-here-from-the-start/",
     start_year_note="Founder Julie Strietelmeier's own account: started on USENET/Geocities, then bought the-gadgeteer.com domain in Dec 1997.",
     traffic=traffic_block(
-        "Similarweb", "total visits", UNKNOWN, 1100000, "trailing_3_months", round(1100000/3),
+        "Similarweb", "total visits", "CONTENT_ONLY", 1100000, "trailing_3_months", round(1100000/3),
         "raw_3mo_total / 3, rounded to nearest integer", "Similarweb snapshot dated ~August 2026", "B",
         "https://www.similarweb.com/website/the-gadgeteer.com/",
         "Global rank #64,011, category rank #132 US Consumer Electronics, 12.5% MoM decrease noted.",
@@ -1060,9 +1065,8 @@ rows.append(row(
     contrast_pattern="shutdown", contrast_evidence_period="Acquired by About.com/New York Times Co. in 2007; domain now resolves to an unrelated Ask.com closure notice as observed 2026-09-17.",
     start_year=UNKNOWN, start_year_note="Not found in sources retrieved this pass; site already an established meta-review publisher by 2007 when acquired.",
     traffic=None,
-    revenue_value="Acquisition price: $33 million (2007, not ongoing revenue)", revenue_figure_period="2007-05-07 acquisition announcement",
-    revenue_evidence="B", revenue_url="https://www.rttnews.com/295951/new-york-times-about-com-acquires-consumersearch-com-for-33-mln-quick-facts.aspx",
-    revenue_note="About.com (New York Times Co.) acquired ConsumerSearch.com for $33 million, announced 2007-05-07. This is an acquisition price, not ongoing revenue.",
+    revenue_value=UNKNOWN, revenue_figure_period="2007-05-07 acquisition announcement",
+    revenue_note="About.com (New York Times Co.) acquired ConsumerSearch.com for $33 million, announced 2007-05-07 (https://www.rttnews.com/295951/new-york-times-about-com-acquires-consumersearch-com-for-33-mln-quick-facts.aspx, tier B). This is an acquisition price, not ongoing revenue. [pre-950 hardening] revenue_value normalized to UNKNOWN per the Study A revenue-field policy: an acquisition/purchase price is not a revenue figure and must never populate revenue_value -- it is preserved here in revenue_note only.",
     display_ads=("UNKNOWN", UNKNOWN, UNKNOWN, "Not applicable -- site no longer functions as a review site."),
     affiliate=("UNKNOWN", UNKNOWN, UNKNOWN, "Historical; not verifiable now that the domain no longer serves review content."),
     own_product=("UNKNOWN", UNKNOWN, UNKNOWN, ""),
@@ -1072,6 +1076,9 @@ rows.append(row(
 
 print(f"Category 4 (Product Review/Buying Guides) rows so far: {len(rows)}")
 assert len(rows) == 40, f"Expected 40 rows, got {len(rows)}"
+
+rows = evidence_harden.harden_rows(rows)
+print("Applied evidence_harden.harden_rows() (pre-950 hardening pass) to all 40 new rows.")
 
 domains = [r["canonical_root_domain"] for r in rows]
 assert len(domains) == len(set(domains)), f"Duplicate domains within the 40: {[d for d in domains if domains.count(d) > 1]}"

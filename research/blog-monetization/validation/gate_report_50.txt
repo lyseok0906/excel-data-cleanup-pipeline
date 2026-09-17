@@ -20,9 +20,9 @@ PASS: all traffic_research_date / revenue_research_date cells are clean ISO (YYY
 PASS: every UNKNOWN-valued field carries UNKNOWN evidence.
 
 --- 7. traffic_scope / traffic_tier consistency check (Section 4-1 rule) ---
-traffic_scope distribution: {'CONTENT_ONLY': 17, 'WHOLE_DOMAIN_INCLUDES_PRODUCT': 6, 'UNKNOWN': 27}
+traffic_scope distribution: {'CONTENT_ONLY': 46, 'WHOLE_DOMAIN_INCLUDES_PRODUCT': 2, 'UNKNOWN': 2}
 PASS: traffic_tier correctly forced to UNKNOWN wherever traffic_scope is WHOLE_DOMAIN_INCLUDES_PRODUCT or UNKNOWN, and raw traffic values remain preserved.
-Sites flagged as whole-domain (excluded from content-level traffic_tier comparisons, raw value retained): ['zapier.com', 'coefficient.io', 'apartmenttherapy.com', 'seriouseats.com', 'loveandlemons.com', 'homegrounds.co']
+Sites flagged as whole-domain (excluded from content-level traffic_tier comparisons, raw value retained): ['zapier.com', 'coefficient.io']
 
 --- 8. contrast_pattern structure check ---
   43folders.com: contrast_pattern=shutdown, evidence_period='cadence_drop documented from ~Sept 2008; full domain shutdown/parking directly c...'
@@ -69,25 +69,25 @@ Sites flagged as whole-domain (excluded from content-level traffic_tier comparis
   budgetsaresexy.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
   consumerismcommentary.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
   1500days.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
-  apartmenttherapy.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
-  seriouseats.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  apartmenttherapy.com: stratum=Large/Traffic Leader | traffic_tier=HIGH | is_niche_authority=N | is_contrast_case=N
+  seriouseats.com: stratum=Large/Traffic Leader | traffic_tier=HIGH | is_niche_authority=Y | is_contrast_case=N
   designsponge.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=Y
   101cookbooks.com: stratum=Contrast Cohort | traffic_tier=HIGH | is_niche_authority=Y | is_contrast_case=Y
-  shanty-2-chic.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
-  tinyhousetalk.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
-  loveandlemons.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
-  theperfectloaf.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
-  afarmgirlsdabbles.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
-  thewoodwhisperer.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
-  pcmag.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
-  tomsguide.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  shanty-2-chic.com: stratum=Mid-scale Active Site | traffic_tier=LOW | is_niche_authority=N | is_contrast_case=N
+  tinyhousetalk.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  loveandlemons.com: stratum=Mid-scale Active Site | traffic_tier=HIGH | is_niche_authority=N | is_contrast_case=N
+  theperfectloaf.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  afarmgirlsdabbles.com: stratum=Mid-scale Active Site | traffic_tier=MID | is_niche_authority=N | is_contrast_case=N
+  thewoodwhisperer.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  pcmag.com: stratum=Large/Traffic Leader | traffic_tier=HIGH | is_niche_authority=N | is_contrast_case=N
+  tomsguide.com: stratum=Large/Traffic Leader | traffic_tier=HIGH | is_niche_authority=N | is_contrast_case=N
   toptenreviews.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
-  gearpatrol.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
-  vacuumwars.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
-  runrepeat.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
-  babygearlab.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  gearpatrol.com: stratum=Mid-scale Active Site | traffic_tier=HIGH | is_niche_authority=N | is_contrast_case=N
+  vacuumwars.com: stratum=Mid-scale Active Site | traffic_tier=HIGH | is_niche_authority=Y | is_contrast_case=N
+  runrepeat.com: stratum=Narrow Niche Authority | traffic_tier=HIGH | is_niche_authority=Y | is_contrast_case=N
+  babygearlab.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
   homegrounds.co: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
-  the-gadgeteer.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
+  the-gadgeteer.com: stratum=Contrast Cohort | traffic_tier=HIGH | is_niche_authority=N | is_contrast_case=Y
   consumersearch.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
 Example of dimension mismatch surfaced (stratum=Large/Traffic Leader but traffic_tier=LOW): ['asianefficiency.com']
 
@@ -99,4 +99,13 @@ Example of dimension mismatch surfaced (stratum=Large/Traffic Leader but traffic
   is_contrast_case: 12 of 49 confirmed = Y (direct column filter, no parsing)
 PASS: denominators computable via direct column filter across all migrated fields.
 
-A0-Phase1 FINAL PASS
+--- 11. Value/evidence directional consistency (non-UNKNOWN value requires non-UNKNOWN evidence) ---
+PASS: every field with a non-UNKNOWN value carries a real (non-UNKNOWN) evidence tier.
+
+--- 12. D-tier evidence must carry a note ---
+PASS: every D-tier (reasoned inference) field has a non-empty note explaining the reasoning.
+
+--- 13. revenue_value format/type check (Study A is not a revenue study) ---
+PASS: every revenue_value is either UNKNOWN or a single clean structured figure (no free text, no compound multi-period figures, no acquisition/purchase prices).
+
+VALIDATION GATE PASS -- rows=50

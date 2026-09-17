@@ -76,12 +76,17 @@ affiliate_note = "Amazon Associates 배너 관찰됨"
 ```
 `Y (D)`처럼 값 컬럼에 등급을 섞어 넣는 것, 또는 출처 URL을 note 자유텍스트 안에만 적고 `_source_url` 컬럼을 비워두는 것 모두 V2에서 금지한다. 통계 스크립트가 `{field}` 컬럼만 보고 집계할 수 있어야 하며, 사람이 문자열을 다시 파싱해서 재분류하는 단계가 없어야 한다.
 
-### 3-1. Evidence 등급 정의 (확정)
-- **A** = 운영자의 직접 진술 — 본인 소유 페이지의 자기공개뿐 아니라, 신뢰할 수 있는 제3자 Q&A/인터뷰에서 운영자 본인이 직접 한 발언도 포함한다(게재처가 3자여도, 발언 주체가 운영자 본인이면 A).
-- **B** = 제3자의 보도·요약·추정(트래픽 추정 도구, 언론 보도 등).
-- **C** = 조사자의 직접 사이트 관찰(광고 유닛 확인, 결제 페이지 확인 등 조사자가 직접 본 것).
-- **D** = 간접 근거를 이용한 추론, 항상 근거를 note에 명시.
+### 3-1. Evidence 등급 정의 (확정, pre-950 하드닝 라운드에서 판단 예시 보강 — 2026-09-17)
+- **A** = 운영자의 직접 진술 — 본인 소유 페이지의 자기공개(예: 본인 About 페이지의 "2012년 시작") 뿐 아니라, 신뢰할 수 있는 제3자 Q&A/인터뷰에서 운영자 본인이 직접 한 발언도 포함한다(게재처가 3자여도, 발언 주체가 운영자 본인이면 A). 예: 제3자 기사에 인용된 "창립년도에 대한 제3자의 보도"는 A가 아니라 B (아래) — 운영자 본인의 직접 인용문일 때만 A.
+- **B** = 제3자의 보도·요약·추정(트래픽 추정 도구, 언론 보도, 창립년도를 다룬 제3자 기사 등 — 운영자 본인의 발언이 아닌 모든 제3자 주장/추정).
+- **C** = 조사자 본인의 직접 사이트 관찰(예: 광고 유닛이 실제로 떠 있는 것을 직접 확인, 결제/가입 폼이나 제품 판매 페이지를 직접 확인 등 — 조사자가 그 자리에서 직접 본 것).
+- **D** = 간접 근거를 이용한 추론(예: 광고 유닛의 부재로부터 "광고 없는 것으로 보임"을 추론), 항상 근거를 note에 명시.
 - **UNKNOWN** = 확인 불가.
+
+**Gate 강제 규칙(pre-950 하드닝, run_gate_v2.py Section 11–13에 구현됨):**
+1. `{field} != UNKNOWN`인데 `{field}_evidence == UNKNOWN`이면 FAIL — 값이 확정되어 있는데 근거등급이 없는 경우는 있을 수 없다(Rule #8의 방향 반대 보완).
+2. `evidence ∈ {A, B, C}`이면 그 필드 전용 `{field}_source_url`이 반드시 실제 URL이어야 한다(note에 URL을 적어두는 것으로 대체 불가 — C는 조사자 본인 관찰이므로 URL이 없으면 사이트 홈페이지 URL로 자동 보완 가능하지만, A/B는 실제 출처 URL을 반드시 새로 확보해야 하며 자동 보완하지 않는다).
+3. `evidence == D`이면 `{field}_note`가 반드시 비어있지 않아야 한다(추론의 근거를 항상 note에 남긴다).
 
 ### 3-2. Rule #8 — UNKNOWN 값은 반드시 UNKNOWN 증거등급을 동반한다
 `{field} = UNKNOWN`이면 `{field}_evidence`도 반드시 `UNKNOWN`이어야 한다. "아마 D등급 정도의 추론은 가능하다"는 판단은 값을 UNKNOWN이 아닌 실제 추정치(N 등)로 채우고 evidence=D로 기록하거나, 값을 UNKNOWN으로 유지하고 그 추론 내용은 `_note`에만 적어야 한다 — evidence 컬럼에 D를 남겨두면 안 된다. (A0-Phase1에서 fortelabs.com/affiliate, asianefficiency.com/affiliate 2건이 `UNKNOWN, D`로 기록되어 있던 실제 위반 사례가 발견되어 이 규칙으로 수정됨 — Section 7-A 참조.)
@@ -108,13 +113,23 @@ traffic_value_monthly_equivalent → 정규화 계산값 (예: raw/3)
 traffic_normalization_method    → 계산 방법 설명 (예: "raw_3mo_total / 3, rounded to nearest integer") 또는 정규화 불필요/불가 시 그 사유
 ```
 
-### 3-6. traffic_scope enum (신규)
-회사 제품 도메인의 블로그처럼 "콘텐츠 자체의 트래픽"과 "도메인 전체 트래픽"이 섞이는 경우를 표시한다(A0-Phase1의 zapier.com이 실제 사례).
+### 3-6. traffic_scope enum (재정의 — pre-950 하드닝 라운드, 2026-09-17)
+**중요한 의미 수정:** `traffic_scope`는 트래픽 **수치를 실제로 구했는지 여부**가 아니라, 이 도메인의 **구조 자체**가 무엇인지를 나타낸다. 즉 "Similarweb에서 숫자가 안 나왔다"는 `traffic_value`가 UNKNOWN이 되는 이유일 뿐, 그 자체로 `traffic_scope`를 UNKNOWN으로 만드는 근거가 아니다. A0-Phase2 초안에서 정확히 이 혼동이 실제로 발생했다 — 27개 사이트가 "숫자를 못 구했다"는 이유만으로 `traffic_scope=UNKNOWN`으로 잘못 기록되어 있었고(실제로는 명백한 콘텐츠 퍼블리셔 도메인), apartmenttherapy.com/seriouseats.com/loveandlemons.com/homegrounds.co 등 4개 사이트는 반대로 "부수적인 쇼핑/광고/도서 판매 링크가 있다"는 이유만으로 `WHOLE_DOMAIN_INCLUDES_PRODUCT`로 과잉 분류되어 있었다. 이번 라운드에서 50개 전체를 도메인 구조 기준으로 재검토하여 수정했다(Section 7-C 참조).
+
+`traffic_value`가 UNKNOWN인 것과 `traffic_scope`가 UNKNOWN인 것은 서로 별개의 축이다:
 ```
-CONTENT_ONLY                    → 콘텐츠 프로퍼티 단독 트래픽으로 확인됨
-WHOLE_DOMAIN_INCLUDES_PRODUCT   → 도메인 전체(제품/앱 포함) 수치라 콘텐츠 단독 수치로 분리 불가
-SUBDIRECTORY_ESTIMATE           → 서브디렉토리 단위 추정치
-UNKNOWN                         → 확인 불가
+CONTENT_ONLY                    → 이 루트 도메인은 본질적으로 콘텐츠 퍼블리셔다(부수적인 쇼핑/광고/도서
+                                   판매 링크 정도는 이 분류를 막지 않는다). 트래픽 숫자를 실제로 구했는지와
+                                   무관하게, 도메인 구조가 "콘텐츠 단독"이면 CONTENT_ONLY다.
+WHOLE_DOMAIN_INCLUDES_PRODUCT   → zapier.com/coefficient.io처럼, SaaS/앱 제품이 도메인 트래픽에 실질적으로
+                                   섞여 있어 도메인 전체 수치가 콘텐츠만의 규모를 대표하지 못하는 구조.
+SUBDIRECTORY_ESTIMATE           → 콘텐츠 서브디렉토리만 별도로 추정된 수치인 구조.
+UNKNOWN                         → 도메인 구조 자체를 판단할 수 없는 경우에만 사용한다(트래픽 숫자를 못
+                                   구했다는 이유만으로는 UNKNOWN을 쓰지 않는다 — 그 경우 traffic_scope는
+                                   도메인 구조상 판단 가능한 값(대개 CONTENT_ONLY)으로 채우고,
+                                   traffic_value 쪽만 UNKNOWN으로 둔다). 폐쇄/리다이렉트된 옛 도메인처럼
+                                   현재 구조 자체를 특정할 수 없는 경우가 진짜 UNKNOWN 사례다
+                                   (예: consumerismcommentary.com, consumersearch.com).
 ```
 `traffic_scope`가 다른 두 사이트의 `traffic_value`를 직접 비교하지 않는다.
 
@@ -330,6 +345,23 @@ commit `40732be`(pilot-100, protocol, A0-Phase1 validation 데이터/스크립�
 **Gate 재실행 결과:** `validation_10_v2.csv`에 대해 `run_gate_v2.py`를 재실행한 결과 전체 체크리스트 PASS, **"A0-Phase1 FINAL PASS"**, 프로세스 exit code **0** 확인. 의도적으로 결함을 주입한 fixture에 대해서는 exit code가 **0이 아님**(1)을 별도로 확인했다(Case G).
 
 이번 라운드는 코드/문서 정합화만 수행했으며, A0-Phase2(40개 확장), Study B, 950개 확장은 실행하지 않았다. 다음 단계는 사용자/GPT의 별도 승인 후에만 진행한다.
+
+## 7-C. 950개 확장 전 마지막 pre-scale 하드닝 (완료, 2026-09-17)
+
+GPT가 누적 50-site 커밋(`baac63d`)을 독립 검토해 PASS로 승인한 뒤, 950개 확장 착수 **직전** 마지막 정합화 라운드로 사용자가 지시한 9개 항목을 처리했다. **이번 라운드에서도 새 사이트 조사는 0건이며, 950개 확장/Study B는 실행하지 않았다.**
+
+1. **`traffic_scope` 재정의 및 50개 전체 재분류** — Section 3-6 참고. 27개 사이트의 잘못된 `UNKNOWN` 분류와 apartmenttherapy.com/seriouseats.com/loveandlemons.com/homegrounds.co 4개 사이트의 잘못된 `WHOLE_DOMAIN_INCLUDES_PRODUCT` 분류를 도메인 구조 기준으로 교정. consumerismcommentary.com/consumersearch.com(폐쇄·리다이렉트로 구조 자체 불확정)만 진짜 UNKNOWN으로 유지, zapier.com/coefficient.io는 진짜 SaaS 혼합 구조로 `WHOLE_DOMAIN_INCLUDES_PRODUCT` 유지.
+2. **Traffic Provider 전략 (950개 규모) — 결정 아닌 권고안 제시.** 유료 구매/API 등록은 금지 지시에 따라 실행하지 않았으며, 조사 결과만 기록한다:
+   - Similarweb 무료/공개 티어: API 없음(전부 수동 조회), 익명 사용자 하루 약 10~15개 도메인 소프트 제한, 결과는 화면 캡처만 가능(CSV 내보내기 없음), 데이터 이력은 최근 약 3개월로 제한. 950개를 이 티어만으로 조사하면 매우 큰 수작업 부담과 높은 UNKNOWN 비율(현재 50개 기준 `traffic_value_raw` UNKNOWN 28%, `traffic_tier` UNKNOWN 38%)이 계속될 것으로 예상된다.
+   - Semrush API: API 이용에는 최상위 "Advanced" 플랜(월 $549 최소)이 필요하고, 그 구독만으로는 API 유닛이 자동 지급되지 않으며 별도 유닛 패키지를 구매해야 한다. 유닛당 단가는 공개되어 있지 않아 영업팀에 직접 문의해야 확인 가능하다.
+   - **권고:** 950개 확장에서도 현재와 같이 Similarweb 무료 티어를 1차 provider로 유지하되(원칙 4의 "다른 provider 수치를 같은 컬럼에서 섞지 않는다"는 원칙은 그대로 유지), 높은 `traffic_value`/`traffic_tier` UNKNOWN 비율을 950개 규모에서 정상적으로 예상되는 결과로 명시적으로 받아들이는 것을 권고한다. Semrush 등 유료 provider 도입은 실제 예산 승인이 있을 때만 검토할 별도 의사결정 사항으로 남겨둔다.
+3. **Study A `revenue_value` 필드 정리** — Study A는 매출 연구가 아니므로, 인수가(acquisition price)나 부분적/과거 시점 수치, 서술형 텍스트는 `revenue_value`에 넣지 않고 `revenue_note`로만 옮긴다. `revenue_value`는 이제 항상 `UNKNOWN`이거나 단일하고 깔끔한 구조화 수치 중 하나만 허용한다(Gate Section 13, `check_revenue_value_format`으로 강제). 이번 라운드에서 4건 교정: thomasjfrank.com/benlcollins.com/financialsamurai.com(서술형·복합기간 값 → UNKNOWN, 상세는 note로 이동), consumersearch.com($33M 인수가 → UNKNOWN, 인수가는 note에 URL과 함께 보존). Study B의 매출 스키마는 이번 라운드에서 설계하지 않았다(user 지시대로 보류).
+4. **Evidence A/B/C/D 판정 규칙 명확화 및 Gate 강화** — Section 3-1 참고. `evidence_harden.py` 신규 모듈로 "값이 있으면 evidence도 있어야 한다"(Rule #8 방향 보완), "A/B/C는 전용 source_url 필요(C는 홈페이지 URL 자동 보완 가능)", "D는 note 필수"의 3개 규칙을 모든 생성 스크립트에 공통 적용. Gate에 대응하는 3개 신규 체크(Section 11~13)를 추가.
+5. **Full PSL 기반 root-domain 처리 — 시도 결과: 차단(blocker)으로 보고.** `WebFetch` 도구로는 `raw.githubusercontent.com`의 Public Suffix List 원본에 접근이 가능함을 확인했으나, 이 도구는 내용을 AI 모델이 요약/가공해서 반환하는 방식이라 10,000줄 이상의 정확한 바이트 단위 데이터 파일(도메인 판정의 정확성이 직접 걸린 파일)을 안전하게 그대로 옮겨오는 용도로는 부적합하다고 판단했다. 이 세션의 `Bash`(curl, pip)에서는 여전히 조직 egress 정책으로 `raw.githubusercontent.com`, `pypi.org` 모두 403으로 차단된 것을 재확인했다(`tldextract` 설치 불가). 사용자 지시("불가능하면 매뉴얼 목록을 더 확장하지 말고 STOP하고 blocker로 보고")에 따라 매뉴얼 목록은 확장하지 않았다. **후속 조치 필요:** 사용자 본인 환경(로컬 PC, 네트워크 제한 없음)에서 `pip install tldextract` 또는 공식 PSL 스냅샷 파일을 직접 받아 저장소에 커밋하면, `domain_utils.py`의 `registrable_domain()` 시그니처만 유지한 채 내부 구현을 교체하는 것은 이후 세션에서 바로 가능하다.
+6. **Domain Registry + wave 아키텍처 설계 및 구현** — `research/blog-monetization/registry/domain_registry.csv`(컬럼: `canonical_root_domain, registrable_domain, source_group, category, sampling_stratum, status, batch_id`)와 이를 관리하는 `validation/scripts/build_domain_registry.py`(`reserve_domains`/`commit_domains`/`reject_domains`/`merge_wave_into_master`/`check_duplicate` 함수 제공)를 신설했다. 사용자 기기에 연결된 `pilot-100/sites.csv`(pre-V2 스키마, `domain` 컬럼)를 세션 중 확보하여 `--pilot-csv` 옵션으로 시딩까지 완료: 현재 A0 누적 50개는 `COMMITTED`, 원본 100개 파일럿 스터디는 중복 3건(thepointsguy.com/thespruce.com/bobvila.com, 각 2개 카테고리에서 독립 샘플링됨)을 1개 registry row로 합쳐 97개 고유 도메인이 `EXCLUDED_PRIOR_PILOT`으로 시딩됨. 총 147행, `COMMITTED`∩`EXCLUDED_PRIOR_PILOT` 교집합 0건(중복 없음)을 스크립트 자체 검증으로 확인.
+7. **자동 요약 스크립트 신설** — `validation/scripts/summarize_dataset.py`. row count/category/sampling_stratum/`is_contrast_case`(를 `sampling_stratum=Contrast Cohort`와 명시적으로 분리 표기)/`traffic_scope`·`traffic_tier`/필드별 UNKNOWN율/필드 완성률/evidence 등급 분포(및 "10개 필드 × N행 = 예상 총합"과 "실제 계산된 총합"을 나란히 출력해 자체 검증)를 CSV에서 직접 계산한다. 이전 `A0_Phase2_report.md`의 "11 fields × 50 = 550" 산술 오류와 `sampling_stratum=Contrast Cohort`/`is_contrast_case=Y` 혼동을 재발 방지하기 위해 신설했다.
+8. **Gate 최종 메시지 데이터셋 중립화** — 항상 "A0-Phase1 FINAL PASS"로 고정 출력되던 메시지를 `f"VALIDATION GATE PASS -- rows={len(rows)}"`(실패 시 `FAILED`)로 교체.
+9. **완료 기준 이행 결과:** (a) 기존 50개 재검증 — Gate 13개 섹션 전부 PASS, exit code 0 확인. (b) 위 (a)와 동일. (c) 자동 요약 생성 — `summarize_dataset.py` 신설 및 실행 확인(evidence 등급 총합 500=500 MATCH). (d) Registry 시딩 — COMMITTED 50건 + EXCLUDED_PRIOR_PILOT 97건, 총 147건, 교집합 0건으로 완료. (e) 재현성 확인 — `migrate_schema.py` → `build_a0_phase2.py` → `run_gate_v2.py` 파이프라인 재실행으로 확인. (f) 테스트 실행 — 기존 회귀 테스트 12/12 PASS(변경 없이 그대로 통과, 이번 라운드가 기존 동작을 깨지 않았음을 확인). 이번 라운드의 모든 변경은 커밋 1건으로 묶되 push하지 않으며, **950개 확장은 사용자/GPT의 다음 별도 승인 전까지 시작하지 않는다.**
 
 ## 8. 자동화 가능한 필드 vs 사람 판단이 필요한 필드 (100개 경험 기반 분류)
 
