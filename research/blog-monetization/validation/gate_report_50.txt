@@ -1,0 +1,102 @@
+=== Row count: 50 ===
+
+--- 1. Enum validation ---
+PASS: all boolean/evidence/enum fields (incl. traffic_scope, contrast_pattern) use only allowed values.
+
+--- 2. Mixed value+evidence in single cell check ---
+PASS: no mixed value+evidence strings found.
+
+--- 3. Duplicate canonical_root_domain check (registrable-domain based) ---
+PASS: all canonical_root_domain values are clean root form (no www./scheme/path).
+PASS: all 50 rows resolve to distinct registrable (eTLD+1) domains (domain_utils.registrable_domain).
+
+--- 4. Provenance / source_url validation (dedicated column required for A/B evidence -- note fallback NOT accepted) ---
+PASS: every field carrying A or B evidence has a valid http(s) URL in its own dedicated _source_url column (note-text URLs do not count).
+
+--- 5. Date-format validation ---
+PASS: all traffic_research_date / revenue_research_date cells are clean ISO (YYYY-MM-DD) or explicit UNKNOWN.
+
+--- 6. UNKNOWN value implies UNKNOWN evidence (Rule #8) ---
+PASS: every UNKNOWN-valued field carries UNKNOWN evidence.
+
+--- 7. traffic_scope / traffic_tier consistency check (Section 4-1 rule) ---
+traffic_scope distribution: {'CONTENT_ONLY': 17, 'WHOLE_DOMAIN_INCLUDES_PRODUCT': 6, 'UNKNOWN': 27}
+PASS: traffic_tier correctly forced to UNKNOWN wherever traffic_scope is WHOLE_DOMAIN_INCLUDES_PRODUCT or UNKNOWN, and raw traffic values remain preserved.
+Sites flagged as whole-domain (excluded from content-level traffic_tier comparisons, raw value retained): ['zapier.com', 'coefficient.io', 'apartmenttherapy.com', 'seriouseats.com', 'loveandlemons.com', 'homegrounds.co']
+
+--- 8. contrast_pattern structure check ---
+  43folders.com: contrast_pattern=shutdown, evidence_period='cadence_drop documented from ~Sept 2008; full domain shutdown/parking directly c...'
+  zenhabits.net: contrast_pattern=traffic_decline, evidence_period='trailing 3 months ending ~August/September 2026 (Similarweb: global rank worsene...'
+  ozgrid.com: contrast_pattern=cadence_drop, evidence_period='Founder passed away 2014 (per own about page); forum component confirmed closed ...'
+  spreadsheetpage.com: contrast_pattern=cadence_drop, evidence_period='Blog index page article:modified_time metadata = 2020-07-08; Similarweb June 202...'
+  getrichslowly.org: contrast_pattern=historically_declined, evidence_period='Sold 2009 (QuinStreet), later reacquired by founder J.D. Roth; per operator's ow...'
+  budgetsaresexy.com: contrast_pattern=shutdown, evidence_period='Sold 2019, dormant/steward-managed ~2019-2022, founder's own 2022 return post st...'
+  consumerismcommentary.com: contrast_pattern=shutdown, evidence_period='Founded 2003 (per QuinStreet's 2011 acquisition press release); acquired by Quin...'
+  1500days.com: contrast_pattern=cadence_drop, evidence_period='Weekly/near-daily posting 2013-2016 per own archive pattern vs. quarterly "Perfo...'
+  designsponge.com: contrast_pattern=shutdown, evidence_period='Site closed by founder's own decision, announced/effective Aug 30, 2019....'
+  101cookbooks.com: contrast_pattern=cadence_drop, evidence_period='Current (Sept 2026) posting cadence vs. historical reputation as a top-tier blog...'
+  the-gadgeteer.com: contrast_pattern=low_traction_despite_age, evidence_period='28+ years operating (1997-2025) vs. current ~367K/mo traffic and #64,011 global ...'
+  consumersearch.com: contrast_pattern=shutdown, evidence_period='Acquired by About.com/New York Times Co. in 2007; domain now resolves to an unre...'
+
+--- 9. Dimension-independence check (sampling_stratum vs traffic_tier vs is_niche_authority vs is_contrast_case) ---
+  thomasjfrank.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=N | is_contrast_case=N
+  zapier.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  asianefficiency.com: stratum=Large/Traffic Leader | traffic_tier=LOW | is_niche_authority=N | is_contrast_case=N
+  nesslabs.com: stratum=Mid-scale Active Site | traffic_tier=MID | is_niche_authority=N | is_contrast_case=N
+  keepproductive.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  fortelabs.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  zettelkasten.de: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  linkingyourthinking.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  43folders.com: stratum=Contrast Cohort | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=Y
+  zenhabits.net: stratum=Contrast Cohort | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=Y
+  mrexcel.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  excelforum.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  excel-easy.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  automateexcel.com: stratum=Mid-scale Active Site | traffic_tier=MID | is_niche_authority=N | is_contrast_case=N
+  coefficient.io: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  powerpivotpro.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  benlcollins.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  excelxor.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  ozgrid.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=Y
+  spreadsheetpage.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=UNKNOWN | is_contrast_case=Y
+  financialsamurai.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=N | is_contrast_case=N
+  getrichslowly.org: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
+  whitecoatinvestor.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  themilitarywallet.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=N
+  dividendgrowthinvestor.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  frugalwoods.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  esimoney.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  budgetsaresexy.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
+  consumerismcommentary.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
+  1500days.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
+  apartmenttherapy.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  seriouseats.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  designsponge.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=Y
+  101cookbooks.com: stratum=Contrast Cohort | traffic_tier=HIGH | is_niche_authority=Y | is_contrast_case=Y
+  shanty-2-chic.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  tinyhousetalk.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  loveandlemons.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  theperfectloaf.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  afarmgirlsdabbles.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  thewoodwhisperer.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  pcmag.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  tomsguide.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  toptenreviews.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  gearpatrol.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=N
+  vacuumwars.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  runrepeat.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  babygearlab.com: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  homegrounds.co: stratum=Narrow Niche Authority | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=N
+  the-gadgeteer.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
+  consumersearch.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
+Example of dimension mismatch surfaced (stratum=Large/Traffic Leader but traffic_tier=LOW): ['asianefficiency.com']
+
+--- 10. Denominator automation test ---
+  affiliate: 27 of 31 confirmed = Y (direct column filter, no parsing)
+  display_ads: 14 of 31 confirmed = Y (direct column filter, no parsing)
+  own_product: 27 of 40 confirmed = Y (direct column filter, no parsing)
+  is_niche_authority: 25 of 49 confirmed = Y (direct column filter, no parsing)
+  is_contrast_case: 12 of 49 confirmed = Y (direct column filter, no parsing)
+PASS: denominators computable via direct column filter across all migrated fields.
+
+A0-Phase1 FINAL PASS
