@@ -1,0 +1,16 @@
+# Dependencies for research/blog-monetization/validation/scripts/.
+#
+# This repo has no other Python dependency file (checked before adding
+# this one -- see research_protocol_v2.md Section 6-3 / 7-F and
+# scripts/README.md for the Full PSL history). All other code in this
+# repo (content/, docs/, fixtures/) is not Python tooling, so this file
+# is scoped to the blog-monetization validation tooling rather than
+# placed at the repo root.
+#
+# Requires Python >= 3.10 (tldextract 5.x's own minimum).
+#
+# Full PSL support (Protocol V2 Section 6-3) was blocked in every sandboxed
+# environment this project was developed in (no outbound network access to
+# PyPI), until the user confirmed installing this exact pinned version
+# works in their local Windows Python environment (2026-09-17).
+tldextract==5.3.2

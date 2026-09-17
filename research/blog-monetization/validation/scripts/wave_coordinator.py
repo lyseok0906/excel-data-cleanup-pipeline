@@ -27,8 +27,14 @@ Sequence `run_wave()` performs (REORDERED in the last pre-950 engineering
 patch, 2026-09-17, commit 8dffb08 GPT follow-up, Item 5 -- see the
 docstring note above run_wave() below for why):
     1. candidate_selection   -- caller supplies a list of candidate domains
-    2. canonicalization      -- domain_utils.registrable_domain()
-    3. duplicate_check       -- check_duplicate() against the registry
+    2. canonicalization      -- domain_utils.registrable_domain() (ACTUALLY applied to every
+                                 candidate as of the Full PSL patch, 2026-09-17, Item 4 --
+                                 previously this step was documented here but not implemented:
+                                 raw candidate strings were reserved/researched/committed
+                                 verbatim. A candidate that fails to canonicalize aborts the
+                                 whole wave before any reservation or research happens.)
+    3. duplicate_check       -- check_duplicate() against the registry, using the
+                                 now-canonical domain
     4. RESERVE               -- reserve_domains(), status=RESERVED
     5. worker dispatch       -- caller-supplied `research_fn(domain) -> row dict`
                                  is called once per successfully reserved domain
@@ -56,6 +62,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import build_domain_registry as registry  # noqa: E402
+import domain_utils  # noqa: E402
 import run_gate_v2  # noqa: E402
 
 
@@ -90,7 +97,38 @@ def run_wave(registry_path: Path, master_csv: Path, candidates: list, batch_id: 
     """
     rows = registry.load_registry(registry_path)
 
-    # 2-3: canonicalize + duplicate-check every candidate before reserving any of them.
+    # 2: canonicalize EVERY candidate BEFORE it ever reaches the registry
+    # (Full PSL patch, 2026-09-17): a raw candidate like
+    # "https://www.example.com/path" must never be stored as
+    # canonical_root_domain verbatim -- only "example.com" is reserved,
+    # researched, and committed. Any candidate that fails to canonicalize
+    # to a non-empty registrable domain aborts the WHOLE wave before any
+    # research is dispatched (never silently skipped).
+    invalid = []
+    canonicalized = []
+    for c in candidates:
+        canon = domain_utils.registrable_domain(c)
+        if not canon:
+            invalid.append(c)
+        else:
+            canonicalized.append(canon)
+    if invalid:
+        raise WaveAbortedError(
+            f"{len(invalid)} candidate(s) could not be canonicalized to a non-empty registrable "
+            f"domain -- aborting before any research or reservation: {invalid}"
+        )
+    # De-duplicate WITHIN this candidate list itself: two raw strings that
+    # canonicalize to the SAME registrable domain (e.g. "example.com" and
+    # "https://www.example.com/") must not both be reserved/researched.
+    seen = set()
+    candidates = []
+    for c in canonicalized:
+        if c not in seen:
+            seen.add(c)
+            candidates.append(c)
+
+    # 3: duplicate-check every (now-canonical) candidate against the
+    # registry before reserving any of them.
     already_taken = []
     to_reserve = []
     for c in candidates:

@@ -395,34 +395,51 @@ class TestPre950FollowUpHardening(unittest.TestCase):
             with self.assertRaises(ValueError):
                 registry.merge_wave_into_master(wave, master)
 
-    # -- Full PSL (Item 3/5): DESIRED behavior, marked expectedFailure while blocked --
+    # -- Full PSL (RESOLVED, 2026-09-17): tldextract==5.3.2 confirmed installed
+    # and working in the user's local Windows Python (>=3.10) environment.
+    # These tests replace the prior @unittest.expectedFailure placeholder --
+    # they are now ordinary, must-pass assertions. If tldextract is not
+    # installed in whatever environment runs this file, domain_utils.py's
+    # import itself raises ImportError with an explanation before any of
+    # these tests even run.
 
-    @unittest.expectedFailure
-    def test_full_psl_blogspot_subdomains_should_be_distinct(self):
-        """
-        DESIRED behavior once Full PSL (tldextract with
-        include_psl_private_domains=True) is implemented: two DIFFERENT
-        blogspot.com sites must be treated as distinct registrable domains
-        (blogspot.com sits on the PSL's PRIVATE section). This currently,
-        correctly, FAILS (marked expectedFailure) because
-        domain_utils.py's curated COMMON_MULTI_LABEL_SUFFIXES table has no
-        private-suffix section -- both the cloud sandbox and the user's
-        local device_bash remain blocked from installing tldextract as of
-        the last pre-950 engineering patch (2026-09-17); see
-        research_protocol_v2.md Section 6-3 / 7-C item 5 / 7-D item 3 and
-        scripts/README.md. This replaces a prior version of this test that
-        asserted the WRONG behavior as a "PASS" -- that inverted framing
-        made a real defect look like a verified feature. With
-        expectedFailure, the test suite's own output shows "expected
-        failure" (not a silent pass) for as long as this is blocked.
-        BEFORE 950-site expansion is approved, Full PSL must be
-        implemented and this @unittest.expectedFailure decorator must be
-        REMOVED (an unexpected pass would then flag loudly that the
-        decorator is stale).
-        """
+    def test_full_psl_blogspot_subdomains_are_distinct(self):
         a = domain_utils.registrable_domain("foo.blogspot.com")
         b = domain_utils.registrable_domain("bar.blogspot.com")
         self.assertNotEqual(a, b)
+        self.assertEqual(a, "foo.blogspot.com")
+        self.assertEqual(b, "bar.blogspot.com")
+
+    def test_full_psl_github_io_subdomains_are_distinct(self):
+        a = domain_utils.registrable_domain("foo.github.io")
+        b = domain_utils.registrable_domain("bar.github.io")
+        self.assertNotEqual(a, b)
+        self.assertEqual(a, "foo.github.io")
+        self.assertEqual(b, "bar.github.io")
+
+    def test_full_psl_plain_domains_still_work(self):
+        self.assertEqual(domain_utils.registrable_domain("example.com"), "example.com")
+        self.assertEqual(domain_utils.registrable_domain("www.example.com"), "example.com")
+        self.assertEqual(domain_utils.registrable_domain("blog.example.com"), "example.com")
+        self.assertEqual(domain_utils.registrable_domain("https://www.example.co.uk/x"), "example.co.uk")
+
+    def test_is_clean_root_form_rejects_subdomain(self):
+        self.assertFalse(domain_utils.is_clean_root_form("blog.example.com"))
+
+    def test_is_clean_root_form_accepts_private_psl_entry(self):
+        # foo.blogspot.com IS its own registrable domain under this
+        # project's include_psl_private_domains=True policy, so it must
+        # pass is_clean_root_form despite looking like a "subdomain".
+        self.assertTrue(domain_utils.is_clean_root_form("foo.blogspot.com"))
+
+    def test_is_clean_root_form_accepts_plain_root(self):
+        self.assertTrue(domain_utils.is_clean_root_form("example.com"))
+        self.assertTrue(domain_utils.is_clean_root_form("example.co.uk"))
+
+    def test_is_clean_root_form_rejects_scheme_www_path(self):
+        self.assertFalse(domain_utils.is_clean_root_form("https://example.com/"))
+        self.assertFalse(domain_utils.is_clean_root_form("www.example.com"))
+        self.assertFalse(domain_utils.is_clean_root_form("example.com/x"))
 
     # -- Item 1 (last pre-950 patch): content_scale_proxy evidence-group coverage --
 
@@ -503,6 +520,33 @@ class TestWaveTransactionOrdering(unittest.TestCase):
             self.assertEqual(rows[0]["status"], "COMMITTED")
             _, master_rows = registry.load_master_rows(master_csv)
             self.assertEqual(len(master_rows), 1)
+
+    def test_url_candidate_stored_as_registrable_domain(self):
+        """
+        Item 4 (Full PSL patch, 2026-09-17): run_wave() must canonicalize
+        a raw URL candidate BEFORE reserving/researching/committing it --
+        the registry and master dataset must both end up with the plain
+        registrable domain, never the raw URL string.
+
+        NOTE: this fixture intentionally uses a real, PSL-listed TLD
+        (.com), not a reserved/unregistered one like ".test" (RFC 2606) --
+        an unlisted TLD is not guaranteed to be present in tldextract's
+        bundled offline PSL snapshot, which would make this test depend on
+        PSL wildcard-fallback behavior instead of the actual
+        canonicalization logic under test.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            registry_path = Path(td) / "registry.csv"
+            master_csv = Path(td) / "master.csv"
+            wave_coordinator.run_wave(
+                registry_path, master_csv, ["https://www.clean-url-example.com/some/path"], batch_id="T-URL",
+                research_fn=wave_coordinator._demo_research_fn,
+            )
+            rows = registry.load_registry(registry_path)
+            self.assertEqual(rows[0]["canonical_root_domain"], "clean-url-example.com")
+            self.assertEqual(rows[0]["registrable_domain"], "clean-url-example.com")
+            _, master_rows = registry.load_master_rows(master_csv)
+            self.assertEqual(master_rows[0]["canonical_root_domain"], "clean-url-example.com")
 
     def test_A_merge_failure_leaves_registry_reserved_and_master_untouched(self):
         with tempfile.TemporaryDirectory() as td:
