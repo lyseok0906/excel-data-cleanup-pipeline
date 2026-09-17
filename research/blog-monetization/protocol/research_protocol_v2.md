@@ -227,6 +227,12 @@ canonical_root_domain 확정
 - 갱신된 레지스트리를 다음 wave의 제외 목록으로 사용
 - 전체 완료 후 100개 때처럼 사후 전수 도메인 대조를 1회 더 수행(이중 안전장치)
 
+### 6-3. 중복 판정은 registrable domain(eTLD+1) 기준으로 한다 (신규, GPT 독립검토 반영)
+
+`canonical_root_domain` 문자열을 단순 lower()/strip()해서 비교하는 것만으로는 `www.example.com`, `https://example.com/path`, `blog.example.com`이 서로 다른 문자열로 남아 중복이 감지되지 않을 수 있다. 이를 막기 위해 중복 판정은 항상 **registrable domain(eTLD+1)** 단위로 한다. 다만 `example.co.uk`처럼 2단계 public suffix가 있는 도메인은 단순히 "마지막 두 라벨"로 자르면 `co.uk`를 등록 가능 도메인으로 오판하므로, Public Suffix List(PSL) 개념을 반영해야 한다.
+
+이 프로젝트의 실행 환경은 PyPI/publicsuffix.org 등 외부 네트워크에 접근할 수 없어 `tldextract` 같은 표준 라이브러리를 설치/사용할 수 없었다. 따라서 `validation/scripts/domain_utils.py`는 co.uk, com.au, co.jp 등 흔히 등장하는 multi-label suffix를 수십 개 curated 목록으로 내장하고, 목록에 없는 suffix는 "마지막 두 라벨" 일반 규칙으로 처리하는 경량 구현을 쓴다. **알려진 한계**: 목록에 없는 드문 multi-label suffix(예: 일부 국가의 3단계 이상 suffix)는 잘못 판정될 수 있다. 향후 네트워크/의존성 설치가 가능해지면 `domain_utils.registrable_domain()`을 `tldextract.extract(...).registered_domain` 호출로 그대로 교체 가능하도록 함수 시그니처를 맞춰뒀다.
+
 ## 7. V2 Validation Gate (1000개 확장 전 필수 통과 조건, A0-Phase1 실측 반영 개정)
 
 **Study A 950개 확장은 아래 gate를 통과하고 사용자/GPT가 승인하기 전에는 실행하지 않는다. A0-Phase2(추가 40개)도 마찬가지로 사용자/GPT 승인 전에는 실행하지 않는다.**
@@ -236,13 +242,14 @@ A0 (10개 → 50개) 단계에서 다음 항목을 확인한다(3-6번은 A0-Pha
 1. boolean/enum field는 정의된 값만 존재하는가 (`Y/N/UNKNOWN`, `A/B/C/D/UNKNOWN`, `traffic_scope` enum, `contrast_pattern` enum — 다른 값 없음)
 2. value/evidence 혼합 표기가 하나도 없는가 (예: `Y (D)` 형태 금지 위반 여부)
 3. root-domain 기준 duplicate가 없는가 (Section 6 canonicalization 적용 후 재확인)
-4. **모든** evidence-bearing 필드(boolean 포함, traffic/revenue만이 아니라)에 `_source_url`이 A/B 등급일 때 채워져 있는가 (Section 3 4분리 반영)
+4. **모든** evidence-bearing 필드(boolean 포함, traffic/revenue만이 아니라)에 `_source_url`이 A/B 등급일 때 채워져 있는가 (Section 3 4분리 반영). **note fallback 금지**: evidence가 A/B인데 전용 `_source_url` 컬럼이 비어 있고 URL이 `_note` 자유텍스트 안에만 적혀 있는 경우는 PASS로 인정하지 않는다 — validator는 반드시 전용 컬럼만 검사한다(GPT 독립검토로 발견, `run_gate_v2.py`에서 note fallback 로직 제거됨).
 5. 날짜 필드가 ISO(`YYYY-MM-DD`) 또는 명시적 `UNKNOWN`이며, 기간 설명문이 섞여 있지 않은가 (Section 3-4)
 6. Rule #8 — `{field}=UNKNOWN`인데 `{field}_evidence≠UNKNOWN`인 행이 없는가 (Section 3-2)
 7. traffic provider/scope가 정상적으로 분리되어 있는가 (provider·scope 혼입 없음, whole-domain 수치가 content-only 수치와 직접 비교되지 않는가)
 8. `sampling_stratum` / `traffic_tier` / `is_niche_authority` / `is_contrast_case`가 서로 독립적으로 기록되어 있는가 (하나의 배타적 라벨로 뭉개지지 않았는가)
 9. denominator 계산이 스크립트로 자동화 가능한가 (사람이 문자열을 다시 파싱해야 하는 경우가 없는가)
 10. enum validation(스키마 검증 스크립트)이 전체 통과하는가
+11. **Gate 실행 자체가 machine-detectable해야 한다**: 검증 스크립트(`run_gate_v2.py`)는 하나라도 FAIL이 있으면 반드시 비정상 종료코드(exit code ≠ 0, 권장 1)로 끝나야 하며, 문자열 출력에 "FAIL"이 있는지 사람이 눈으로 확인하는 방식에 의존하지 않는다(CI/자동화 파이프라인에서 그대로 게이트로 쓸 수 있어야 함). 전체 PASS 시 exit code 0.
 
 **50개 완료 후 보고 항목** (950개 확장 여부를 사용자/GPT가 판단하기 위한 자료):
 - enum validation 결과
@@ -292,6 +299,37 @@ A0-Phase1은 Productivity Software & PKM 니치에서 10개 사이트를 실제 
 **A0-Phase1 FINAL PASS.**
 
 **남은 문제(추후 A0-Phase2/1000개 확장 시 검토 필요, 이번 gate 통과에는 영향 없음):** `traffic_tier` 임계값(HIGH/MID/LOW 구간)이 잠정치라 니치별 검증 필요, `is_niche_authority`/`contrast_pattern` 판정이 현재 D등급 추론 위주라 대규모에서는 판정 기준을 더 구체화할 필요, `SUBDIRECTORY_ESTIMATE` scope는 이번 10개 표본에 실례가 없어 규칙만 정의되고 실측 검증은 아직 안 됨.
+
+## 7-B. GPT 독립 코드 리뷰 반영 — Validator/Migration 하드닝 (완료, 2026-09-17)
+
+commit `40732be`(pilot-100, protocol, A0-Phase1 validation 데이터/스크립트 최초 커밋) 이후 GPT가 GitHub 저장소를 독립적으로 리뷰해, **데이터(`validation_10_v2.csv`)는 Gate PASS이지만 validator/migration 코드 자체에 5건의 blocking issue**가 있다고 지적했다. 40개 확장 전에 반드시 고쳐야 하는 이유는, 코드에 결함이 있으면 40개·1000개로 늘어났을 때 결함도 함께 배로 늘어나기 때문이다. 이번 라운드는 코드/문서 정합화만 수행했고 **새 사이트 조사, 새 수치 확인, 추가 표본 확장은 전혀 하지 않았다.**
+
+**GPT가 발견한 5건과 조치:**
+
+1. **Provenance note-fallback 금지 (검증 누락 수정).** 기존 `run_gate_v2.py`는 A/B 등급 evidence인데 전용 `_source_url` 컬럼이 비어 있어도, URL 문자열이 `_note` 자유텍스트 안에 들어있으면 PASS로 인정하는 허점이 있었다. 이는 실질적으로 provenance 검증을 무력화한다. `check_provenance()`를 재작성해 A/B 등급은 **전용 `_source_url` 컬럼에 `http(s)://`로 시작하는 값이 있을 때만 PASS**로 엄격화했다(note fallback 로직 완전 제거). Section 7 Gate 체크리스트 4번 항목에 "note fallback 금지" 문구를 명시했다.
+2. **`migrate_schema.py` 재현성 복구.** 기존 스크립트를 그대로 재실행해도 커밋된 `validation_10_v2.csv`(zapier.com traffic_tier 교정, 7건 provenance URL 패치 등)를 재생성하지 못했다 — 그 패치들이 스크립트 밖에서 1회성 수작업으로 적용됐기 때문이다. 모든 patch를 `SOURCE_URL_OVERRIDES` 딕셔너리와 `traffic_tier_for()` 함수 등 **스크립트 코드 안으로 흡수**해, `validation_10.csv` + `migrate_schema.py` → `validation_10_v2.csv`가 항상 동일한 결과를 재현하도록 고쳤다. 검증 방법: 별도 임시 파일에 재생성 → 필드 단위 diff → 결과는 아래 "재현성 검증 결과" 참고. 행 순서도 고정 리스트(`expected_order`)와 대조해 어긋나면 스크립트가 즉시 에러를 내도록 했다.
+3. **환경 종속 절대경로 제거.** 스크립트에 박혀 있던 `/home/claude/...` 식 절대경로를 전부 제거하고, `pathlib.Path(__file__).resolve().parent` 기준 상대경로를 기본값으로 쓰되 `argparse`로 CLI 인자(`--src`, `--dst`, 위치 인자 `csv_path`, `--report`)를 받도록 고쳤다. 이제 저장소를 어느 OS/환경에 clone해도(Windows, Linux, Cowork) 동일하게 동작한다. 새로운 환경 종속 경로는 추가하지 않았다.
+4. **Registrable domain(eTLD+1) 기반 중복 판정 구현.** 기존 중복 판정은 `lower()/strip()` 단순 문자열 비교였다. 신규 `domain_utils.py` 모듈(의존성/네트워크 없음 — 이 환경은 PyPI·publicsuffix.org에 대한 아웃바운드 네트워크 접근이 차단되어 있어 `tldextract` 설치 불가, 별도 확인됨)이 `example.co.uk`류 복수 라벨 공용 접미사를 인식하는 큐레이션된 목록 기반으로 registrable domain을 계산한다. 상세는 아래 6-3 신설 절 참고. `check_duplicates()`는 이제 원본 `canonical_root_domain` 포맷 검증과 registrable-domain 기준 중복 검사를 모두 수행한다.
+5. **Gate의 machine-detectable exit code.** 기존 `run_gate_v2.py`는 FAIL이 있어도 텍스트만 출력하고 프로세스는 항상 exit code 0으로 끝났다. 이제 모든 체크 결과를 집계한 `all_passed` boolean을 기준으로 **전체 PASS일 때만 exit code 0, 하나라도 FAIL이면 exit code 1**로 종료하도록 고쳤다(`sys.exit(0 if all_passed else 1)`). Section 7 Gate 체크리스트에 11번 항목으로 명시했다.
+
+**회귀 테스트 (신규 `test_validation_tooling.py`, stdlib `unittest`만 사용, 이 저장소의 "추가 의존성 없음" 원칙 준수):**
+- Case A: A등급 evidence + `_source_url` 비어있음 + URL이 note에만 있음 → FAIL 확인
+- Case B: A등급 evidence + 전용 `_source_url` 존재 → PASS 확인
+- Case C: `traffic_scope=WHOLE_DOMAIN_INCLUDES_PRODUCT` → `traffic_tier=UNKNOWN` 강제 확인
+- Case D: `traffic_scope=UNKNOWN` → `traffic_tier=UNKNOWN` 강제 확인
+- Case E: `example.com`/`www.example.com`/`blog.example.com` → 동일 도메인으로 판정 확인
+- Case F: `example.co.uk`/`www.example.co.uk` → 동일 도메인으로 판정 확인(및 `.co.uk`가 `.com`과 혼동되지 않음을 별도 확인)
+- Case G: 의도적으로 결함(중복 도메인 + `Y (D)` 혼합 포맷)을 주입한 fixture로 실제 서브프로세스 실행 → exit code ≠ 0 확인
+- Case H: 정상 데이터로 실제 서브프로세스 실행 → exit code == 0 확인
+- Case I: `migrate_schema.py`를 재실행해 커밋된 `validation_10_v2.csv`와 필드 단위로 완전히 일치하는지 확인
+
+**결과: 12/12 테스트 전부 PASS.**
+
+**재현성 검증 결과:** `migrate_schema.py`를 재실행해 생성한 CSV와 기존 커밋된 `validation_10_v2.csv`를 diff한 결과, 차이는 정확히 3건이며 모두 **의도적으로 공개된 정밀도 개선**이다 — keepproductive.com의 `affiliate_source_url`/`own_product_source_url`/`course_or_community_source_url`이 기존의 일반 URL(`https://www.theplus.so`)에서, 이전 targeted-repair 라운드에서 이미 확인했던 더 정확한 원문 페이지(`https://theplus.so/who/francesco-dalessio`, 동일 출처·새 조사 없음)로 갱신됐다. 그 외 57개 필드 × 10행 전체가 완전히 일치한다.
+
+**Gate 재실행 결과:** `validation_10_v2.csv`에 대해 `run_gate_v2.py`를 재실행한 결과 전체 체크리스트 PASS, **"A0-Phase1 FINAL PASS"**, 프로세스 exit code **0** 확인. 의도적으로 결함을 주입한 fixture에 대해서는 exit code가 **0이 아님**(1)을 별도로 확인했다(Case G).
+
+이번 라운드는 코드/문서 정합화만 수행했으며, A0-Phase2(40개 확장), Study B, 950개 확장은 실행하지 않았다. 다음 단계는 사용자/GPT의 별도 승인 후에만 진행한다.
 
 ## 8. 자동화 가능한 필드 vs 사람 판단이 필요한 필드 (100개 경험 기반 분류)
 
