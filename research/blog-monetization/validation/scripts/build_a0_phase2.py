@@ -861,7 +861,8 @@ rows.append(row(
     newsletter_email_capture=("UNKNOWN", UNKNOWN, UNKNOWN, "Not directly confirmed."),
 ))
 
-print(f"Category 3 (Home/DIY & Food) rows so far: {len(rows)}")
+print(f"Category 3 (Home/DIY & Food/Recipe -- un-merged into 'Home / DIY' x5 and 'Food / Recipe' x5 "
+      f"via schema_extend.DOMAIN_CATEGORY_OVERRIDES, last pre-950 patch) rows so far: {len(rows)}")
 
 # ============================================================
 # CATEGORY 4: Product Review / Buying Guides (10 sites)
@@ -1108,13 +1109,17 @@ rows.append(row(
 print(f"Category 4 (Product Review/Buying Guides) rows so far: {len(rows)}")
 assert len(rows) == 40, f"Expected 40 rows, got {len(rows)}"
 
-rows = evidence_harden.harden_rows(rows)
-print("Applied evidence_harden.harden_rows() (pre-950 hardening pass) to all 40 new rows.")
-
 domains = [r["canonical_root_domain"] for r in rows]
 assert len(domains) == len(set(domains)), f"Duplicate domains within the 40: {[d for d in domains if domains.count(d) > 1]}"
 
+# schema_extend must run BEFORE evidence_harden.harden_rows() now: since the
+# last pre-950 patch, content_scale_proxy is part of evidence_harden.ALL_GROUPS,
+# so harden_row() needs those fields to already exist on each row dict --
+# they are only added here, in bulk, not by the individual row() calls above.
 schema_extend.extend_rows_with_production_schema(rows, start_index=10)
+
+rows = evidence_harden.harden_rows(rows)
+print("Applied evidence_harden.harden_rows() (pre-950 hardening pass) to all 40 new rows.")
 
 with open(OUT_40, "w", newline="", encoding="utf-8") as f:
     w = csv.DictWriter(f, fieldnames=FIELDNAMES)

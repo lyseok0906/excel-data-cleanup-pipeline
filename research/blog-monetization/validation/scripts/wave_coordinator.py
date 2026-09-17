@@ -23,7 +23,9 @@ receives a list of already-RESERVED domains to research and hands back
 plain research rows; it never touches the registry file itself. This is
 what prevents two workers from racing to reserve the same domain.
 
-Sequence `run_wave()` performs:
+Sequence `run_wave()` performs (REORDERED in the last pre-950 engineering
+patch, 2026-09-17, commit 8dffb08 GPT follow-up, Item 5 -- see the
+docstring note above run_wave() below for why):
     1. candidate_selection   -- caller supplies a list of candidate domains
     2. canonicalization      -- domain_utils.registrable_domain()
     3. duplicate_check       -- check_duplicate() against the registry
@@ -33,15 +35,21 @@ Sequence `run_wave()` performs:
                                  (in this round, `research_fn` is never wired to
                                  real research -- see --demo for a stub)
     6. wave Gate             -- run_gate_v2.run_gate() against the wave's own rows
-    7. COMMIT or REJECT      -- commit_domains() on Gate PASS, reject_domains()
-                                 on Gate FAIL (registry rows only; a FAILed
-                                 wave's rows are never merged into the master)
-    8. merge                 -- merge_wave_into_master() appends committed rows
-                                 into the master Study A dataset CSV
+    7. merge validation      -- build_domain_registry.compute_merge() against the
+                                 CURRENT on-disk master, in memory only (no write yet)
+    8. merged-master Gate    -- run_gate_v2.run_gate() against the FULL merged
+                                 row set (existing master + this wave), not just
+                                 the wave's own rows
+    9. master write          -- ONLY if both Gates (6 and 8) passed: write the
+                                 merged rows to the master CSV
+   10. COMMIT                -- ONLY after the master write succeeds: commit_domains()
+                                 flips the reserved domains to COMMITTED and saves
+                                 the registry. A Gate failure at 6 or 8 raises
+                                 WaveAbortedError and leaves the domains RESERVED
+                                 (not committed, not rejected, master untouched).
 """
 
 import argparse
-import csv
 import sys
 import tempfile
 from pathlib import Path
@@ -61,10 +69,24 @@ def run_wave(registry_path: Path, master_csv: Path, candidates: list, batch_id: 
     return a fully-populated Protocol V2 row (all of migrate_schema.FIELDNAMES)
     for that one domain -- this function does not itself perform research.
 
-    Returns a summary dict. Raises WaveAbortedError if the wave's Gate
-    fails (nothing is committed or merged in that case, though the
-    RESERVED rows remain RESERVED, not silently REJECTED, since a Gate
-    failure may be fixable and re-attempted under the same batch_id).
+    Returns a summary dict. Raises WaveAbortedError if either Gate fails
+    (the wave's own rows, or the full merged master after adding them) --
+    in both cases nothing is committed and the master file is NOT written,
+    and the RESERVED rows remain RESERVED, not silently REJECTED, since a
+    Gate failure may be fixable and re-attempted under the same batch_id.
+
+    Transaction ordering (Item 5, last pre-950 engineering patch,
+    2026-09-17, commit 8dffb08 GPT follow-up): the PREVIOUS version wrote
+    registry status=COMMITTED before merging into the master file. If the
+    merge then failed (column mismatch, a duplicate the wave-only Gate
+    couldn't see, a crash), the registry would claim a domain was
+    COMMITTED while the master dataset never actually gained that row --
+    an inconsistent state with no clean recovery. This version reorders
+    the irreversible steps so failure always leaves the SAFE state
+    (RESERVED, master unchanged) rather than the UNSAFE one (COMMITTED,
+    master unchanged): wave Gate -> validate the merge in memory (no
+    write) -> Gate the FULL merged row set -> only then write the master
+    file -> only then flip the registry to COMMITTED.
     """
     rows = registry.load_registry(registry_path)
 
@@ -93,38 +115,52 @@ def run_wave(registry_path: Path, master_csv: Path, candidates: list, batch_id: 
 
     # 6: wave Gate, against ONLY this wave's own rows (a wave must stand on its own).
     report_lines, all_passed = run_gate_v2.run_gate(wave_rows)
-
     if not all_passed:
-        # Leave the domains RESERVED (not REJECTED) -- a failed wave is
-        # usually a fixable data problem, and REJECTED should mean "this
-        # domain itself was rejected", not "the wave's data had a bug".
         raise WaveAbortedError(
-            "Wave Gate FAILED -- domains remain RESERVED (not committed, not rejected). "
-            "Fix the data and re-run the wave under the same batch_id, or explicitly "
+            "Wave Gate FAILED -- domains remain RESERVED (not committed, not rejected), master file "
+            "NOT touched. Fix the data and re-run the wave under the same batch_id, or explicitly "
             "reject_domains() the ones that are genuinely bad.\n" + "\n".join(report_lines)
         )
 
-    # 7: commit.
+    # 7: validate the merge AGAINST THE CURRENT ON-DISK MASTER, in memory
+    # only -- no write happens here. A column-mismatch or a duplicate the
+    # wave-only Gate above couldn't see (e.g. against rows already in the
+    # master from a prior wave) raises here and aborts before anything is
+    # written or committed.
+    existing_fieldnames, existing_rows = registry.load_master_rows(master_csv)
+    try:
+        merged_fieldnames, merged_rows = registry.compute_merge(
+            existing_fieldnames, existing_rows, list(wave_rows[0].keys()), wave_rows
+        )
+    except ValueError as e:
+        raise WaveAbortedError(
+            f"Wave rows failed pre-merge validation against the current master -- domains remain "
+            f"RESERVED, master file NOT touched: {e}"
+        )
+
+    # 8: Gate the FULL merged row set (existing master + this wave), not
+    # just the wave's own rows -- a wave can be internally clean and still
+    # make the overall dataset inconsistent (Test B in
+    # test_validation_tooling.py exercises exactly this).
+    merged_report_lines, merged_all_passed = run_gate_v2.run_gate(merged_rows)
+    if not merged_all_passed:
+        raise WaveAbortedError(
+            "Merged-master Gate FAILED after adding this wave's rows -- master file was NOT written, "
+            "domains remain RESERVED (not committed, not rejected).\n" + "\n".join(merged_report_lines)
+        )
+
+    # 9: only now -- after BOTH gates passed -- write the master file.
+    registry.write_rows_csv(master_csv, merged_fieldnames, merged_rows)
+
+    # 10: only after the master write succeeded, flip the registry to COMMITTED.
     rows = registry.commit_domains(rows, to_reserve, batch_id=batch_id)
     registry.save_registry(registry_path, rows)
-
-    # 8: merge into the master dataset.
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, newline="", encoding="utf-8") as tmp:
-        writer = csv.DictWriter(tmp, fieldnames=list(wave_rows[0].keys()))
-        writer.writeheader()
-        for r in wave_rows:
-            writer.writerow(r)
-        wave_csv_path = Path(tmp.name)
-    try:
-        merged_count = registry.merge_wave_into_master(wave_csv_path, master_csv)
-    finally:
-        wave_csv_path.unlink(missing_ok=True)
 
     return {
         "batch_id": batch_id,
         "reserved": len(to_reserve),
         "committed": len(to_reserve),
-        "master_row_count_after_merge": merged_count,
+        "master_row_count_after_merge": len(merged_rows),
     }
 
 

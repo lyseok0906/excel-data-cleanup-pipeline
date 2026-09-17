@@ -8,10 +8,11 @@ Row count: 50
 
 ## Category distribution (category field, closed enum)
   Excel / Spreadsheet: 10 (20.0%)
-  Home / DIY & Food: 10 (20.0%)
   Personal Finance: 10 (20.0%)
   Product Review / Buying Guides: 10 (20.0%)
   Productivity / PKM: 10 (20.0%)
+  Food / Recipe: 5 (10.0%)
+  Home / DIY: 5 (10.0%)
   TOTAL: 50 (must equal row count 50)
 
 ## primary_niche detail (free-text, reference only -- not a category distribution)
@@ -55,6 +56,7 @@ Row count: 50
   start_year_value: 9/50 UNKNOWN (18.0%)
   traffic_value_raw: 14/50 UNKNOWN (28.0%)
   revenue_value: 50/50 UNKNOWN (100.0%)
+  content_scale_proxy_value: 50/50 UNKNOWN (100.0%)
   traffic_tier: 19/50 UNKNOWN (38.0%)
   traffic_scope: 2/50 UNKNOWN (4.0%)
 
@@ -69,21 +71,22 @@ Row count: 50
   start_year_value: 41/50 completed (82.0%)
   traffic_value_raw: 36/50 completed (72.0%)
   revenue_value: 0/50 completed (0.0%)
+  content_scale_proxy_value: 0/50 completed (0.0%)
   traffic_tier: 31/50 completed (62.0%)
   traffic_scope: 48/50 completed (96.0%)
 
 ## Evidence-tier distribution (across all evidence-bearing fields)
-  Evidence-bearing fields counted: 10 (is_niche_authority_evidence, is_contrast_case_evidence, display_ads_evidence, affiliate_evidence, own_product_evidence, course_or_community_evidence, newsletter_email_capture_evidence, start_year_evidence, traffic_evidence, revenue_evidence)
+  Evidence-bearing fields counted: 11 (is_niche_authority_evidence, is_contrast_case_evidence, display_ads_evidence, affiliate_evidence, own_product_evidence, course_or_community_evidence, newsletter_email_capture_evidence, start_year_evidence, traffic_evidence, revenue_evidence, content_scale_proxy_evidence)
   Rows: 50
-  Expected total evidence-tier cells = 10 fields x 50 rows = 500
-  Actual total evidence-tier cells counted: 500  [MATCH]
+  Expected total evidence-tier cells = 11 fields x 50 rows = 550
+  Actual total evidence-tier cells counted: 550  [MATCH]
 
   Overall tier distribution (all fields combined):
-    UNKNOWN: 170 (34.0%)
-    D: 98 (19.6%)
-    A: 80 (16.0%)
-    B: 78 (15.6%)
-    C: 74 (14.8%)
+    UNKNOWN: 220 (40.0%)
+    D: 98 (17.8%)
+    A: 80 (14.5%)
+    B: 78 (14.2%)
+    C: 74 (13.5%)
 
   Per-field tier distribution:
     is_niche_authority_evidence (n=50): D=33, B=15, A=1, UNKNOWN=1
@@ -96,6 +99,7 @@ Row count: 50
     start_year_evidence (n=50): A=18, B=14, UNKNOWN=9, C=6, D=3
     traffic_evidence (n=50): B=35, UNKNOWN=14, C=1
     revenue_evidence (n=50): UNKNOWN=50
+    content_scale_proxy_evidence (n=50): UNKNOWN=50
 
 ## Denominator notes
   All rates above use the FULL row count as the denominator unless stated otherwise. Rates that are conceptually conditional on another field (e.g. 'of sites with a known traffic_scope, how many have a known traffic_tier') are called out explicitly below rather than silently using a filtered denominator elsewhere.

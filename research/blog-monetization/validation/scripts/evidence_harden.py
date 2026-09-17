@@ -37,6 +37,27 @@ KNOWN_REVERT_TO_UNKNOWN and build_a0_phase2.py's
 KNOWN_D_TIER_REASONING_NOTES for the pre-950 dataset's specific
 corrections, each individually reviewed against the original research
 notes rather than applied as a blanket rule).
+
+Last pre-950 engineering patch (2026-09-17, commit 8dffb08 GPT follow-up,
+Item 1): `content_scale_proxy` is a production-schema evidence-bearing
+group (schema_extend.py) that was added to the canonical CSV columns but
+was NOT included in ALL_GROUPS below, so it was silently skipped by every
+consumer of ALL_GROUPS (evidence_harden's own consistency checks,
+summarize_dataset.py's UNKNOWN-rate / completion-rate / evidence-tier
+sections). It is now included in ALL_GROUPS (as CONTENT_SCALE_PROXY_GROUP),
+plus one extra rule specific to its 5th field (`_method`, which none of
+the other groups have): `content_scale_proxy_value != UNKNOWN` requires
+`content_scale_proxy_method != UNKNOWN` too (you can't have a scale
+number without knowing what produced it).
+
+Also new this round: `verify_group_coverage(fieldnames)` -- a structural
+check that every `*_evidence` column actually present in a schema's field
+list belongs to EXACTLY one group in ALL_GROUPS (Item 1's explicit ask:
+"모든 *_evidence 컬럼이 정확히 하나의 evidence group에 속하는지 검사.
+누락/중복이면 FAIL"). This is what makes a future repeat of "a new
+evidence-bearing field was added to the schema but never wired into
+ALL_GROUPS" a loud, machine-detectable Gate failure instead of a silent
+under-count.
 """
 
 # (value_field, evidence_field, source_url_field, note_field) for every
@@ -57,11 +78,35 @@ COMPOSITE_GROUPS = [
     ("revenue_value", "revenue_evidence", "revenue_source_url", "revenue_note"),
 ]
 
-ALL_GROUPS = SIMPLE_GROUPS + COMPOSITE_GROUPS
+# content_scale_proxy has a 5th field (_method) with no equivalent in any
+# other group, so it is validated with the standard 4-tuple ALL_GROUPS
+# machinery (below) PLUS one extra rule in harden_row() for _method.
+CONTENT_SCALE_PROXY_GROUP = [
+    ("content_scale_proxy_value", "content_scale_proxy_evidence", "content_scale_proxy_source_url", "content_scale_proxy_note"),
+]
+
+ALL_GROUPS = SIMPLE_GROUPS + COMPOSITE_GROUPS + CONTENT_SCALE_PROXY_GROUP
 
 
 class EvidenceHardenError(ValueError):
     pass
+
+
+def verify_group_coverage(fieldnames) -> tuple:
+    """
+    Structural coverage check (Item 1, last pre-950 patch): every
+    `*_evidence` column in `fieldnames` must belong to EXACTLY one group
+    in ALL_GROUPS -- no evidence-bearing field silently missing from
+    ALL_GROUPS (as content_scale_proxy previously was), and no field
+    listed twice. Returns (missing, duplicated) -- both empty on success.
+    """
+    schema_evidence_fields = [f for f in fieldnames if f.endswith("_evidence")]
+    group_evidence_fields = [g[1] for g in ALL_GROUPS]
+    from collections import Counter
+    counts = Counter(group_evidence_fields)
+    missing = sorted(set(schema_evidence_fields) - set(group_evidence_fields))
+    duplicated = sorted(f for f, c in counts.items() if c > 1)
+    return missing, duplicated
 
 
 def harden_row(d: dict) -> dict:
@@ -101,6 +146,18 @@ def harden_row(d: dict) -> dict:
                 f"D-tier inference must always state its real reasoning (no placeholder auto-fill); "
                 f"fix in the generator script."
             )
+
+    # content_scale_proxy-specific rule (Item 1, last pre-950 patch): a
+    # non-UNKNOWN proxy value must always carry a non-UNKNOWN method --
+    # you can't report a content-scale number without knowing what
+    # produced it (sitemap count, index count, etc.).
+    proxy_value = str(d.get("content_scale_proxy_value", "UNKNOWN")).strip()
+    proxy_method = str(d.get("content_scale_proxy_method", "UNKNOWN")).strip()
+    if proxy_value != "UNKNOWN" and proxy_method == "UNKNOWN":
+        raise EvidenceHardenError(
+            f"{domain}: content_scale_proxy_value={proxy_value!r} but content_scale_proxy_method=UNKNOWN -- "
+            f"a non-UNKNOWN proxy value must state the method that produced it."
+        )
 
     return d
 

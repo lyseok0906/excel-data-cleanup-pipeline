@@ -244,6 +244,41 @@ def check_traffic_scope_tier(rows):
     return violations
 
 
+def check_group_coverage(rows):
+    """
+    Item 1 of the last pre-950 engineering patch: structural check that
+    every `*_evidence` column actually present in the CSV's own field list
+    belongs to exactly one group in evidence_harden.ALL_GROUPS. This is
+    what catches a future repeat of "a new evidence-bearing field was
+    added to the schema but never wired into ALL_GROUPS" (exactly what
+    happened to content_scale_proxy before this patch) as a loud Gate
+    FAIL instead of a silent under-count in reports.
+    """
+    import evidence_harden
+    if not rows:
+        return [], []
+    fieldnames = list(rows[0].keys())
+    return evidence_harden.verify_group_coverage(fieldnames)
+
+
+def check_content_scale_proxy_method(rows):
+    """
+    Item 1 of the last pre-950 engineering patch: content_scale_proxy_value
+    != UNKNOWN requires content_scale_proxy_method != UNKNOWN too -- a
+    reported content-scale number without a stated method (sitemap count,
+    index count, etc.) is not usable. Mirrors evidence_harden.harden_row's
+    equivalent check, but enforced independently here so the Gate catches
+    it even on data that never went through evidence_harden.
+    """
+    violations = []
+    for r in rows:
+        v = r["content_scale_proxy_value"].strip()
+        m = r["content_scale_proxy_method"].strip()
+        if v != "UNKNOWN" and m == "UNKNOWN":
+            violations.append((r["canonical_root_domain"], v, m))
+    return violations
+
+
 def check_dimension_independence(rows):
     """Section 7 item 8: sampling_stratum / traffic_tier / is_niche_authority / is_contrast_case are independent fields (informational, not a pass/fail check)."""
     return [
@@ -398,6 +433,28 @@ def run_gate(rows):
     else:
         lines.append("PASS: every revenue_value is either UNKNOWN or a single clean structured figure "
                       "(no free text, no compound multi-period figures, no acquisition/purchase prices).")
+    lines.append("")
+
+    section("14. Evidence-group coverage check (every *_evidence column belongs to exactly one evidence_harden group)")
+    missing, duplicated = check_group_coverage(rows)
+    if missing or duplicated:
+        all_passed = False
+        if missing:
+            lines.append(f"FAIL: {len(missing)} *_evidence column(s) present in the CSV but missing from evidence_harden.ALL_GROUPS: {missing}")
+        if duplicated:
+            lines.append(f"FAIL: {len(duplicated)} *_evidence column(s) appear in more than one evidence_harden group: {duplicated}")
+    else:
+        lines.append("PASS: every *_evidence column in the schema belongs to exactly one evidence_harden.ALL_GROUPS entry (no missing, no duplicated).")
+    lines.append("")
+
+    section("15. content_scale_proxy_value requires content_scale_proxy_method")
+    v = check_content_scale_proxy_method(rows)
+    if v:
+        all_passed = False
+        lines.append(f"FAIL: {len(v)} content_scale_proxy_value cells asserted with method=UNKNOWN:")
+        lines.extend(f"  {x}" for x in v)
+    else:
+        lines.append("PASS: every non-UNKNOWN content_scale_proxy_value carries a non-UNKNOWN content_scale_proxy_method.")
     lines.append("")
 
     lines.append(f"VALIDATION GATE PASS -- rows={len(rows)}" if all_passed

@@ -108,4 +108,10 @@ PASS: every D-tier (reasoned inference) field has a non-empty note explaining th
 --- 13. revenue_value format/type check (Study A is not a revenue study) ---
 PASS: every revenue_value is either UNKNOWN or a single clean structured figure (no free text, no compound multi-period figures, no acquisition/purchase prices).
 
+--- 14. Evidence-group coverage check (every *_evidence column belongs to exactly one evidence_harden group) ---
+PASS: every *_evidence column in the schema belongs to exactly one evidence_harden.ALL_GROUPS entry (no missing, no duplicated).
+
+--- 15. content_scale_proxy_value requires content_scale_proxy_method ---
+PASS: every non-UNKNOWN content_scale_proxy_value carries a non-UNKNOWN content_scale_proxy_method.
+
 VALIDATION GATE PASS -- rows=50

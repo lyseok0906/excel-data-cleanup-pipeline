@@ -24,6 +24,7 @@ import evidence_harden
 import run_gate_v2
 import summarize_dataset
 import build_domain_registry as registry
+import wave_coordinator
 
 HERE = Path(__file__).resolve().parent
 
@@ -394,23 +395,178 @@ class TestPre950FollowUpHardening(unittest.TestCase):
             with self.assertRaises(ValueError):
                 registry.merge_wave_into_master(wave, master)
 
-    # -- Full PSL (Item 5): documented KNOWN LIMITATION, not a claim of correctness --
+    # -- Full PSL (Item 3/5): DESIRED behavior, marked expectedFailure while blocked --
 
-    def test_KNOWN_LIMITATION_blogspot_subdomains_incorrectly_collapse(self):
+    @unittest.expectedFailure
+    def test_full_psl_blogspot_subdomains_should_be_distinct(self):
         """
-        Item 5 (full PSL via tldextract with include_psl_private_domains=True)
-        remains BLOCKED (no network/pip access in either the cloud sandbox or
-        the user's local device_bash -- see research_protocol_v2.md Section 7-C
-        follow-up and scripts/README.md). The curated COMMON_MULTI_LABEL_SUFFIXES
-        table has no private-suffix section, so two DIFFERENT blogspot sites
-        currently, INCORRECTLY, collapse to the same registrable domain. This
-        test documents that known-wrong behavior (not the desired one) so that
-        implementing full PSL support later will make it fail loudly here,
-        prompting an update rather than a silent behavior change.
+        DESIRED behavior once Full PSL (tldextract with
+        include_psl_private_domains=True) is implemented: two DIFFERENT
+        blogspot.com sites must be treated as distinct registrable domains
+        (blogspot.com sits on the PSL's PRIVATE section). This currently,
+        correctly, FAILS (marked expectedFailure) because
+        domain_utils.py's curated COMMON_MULTI_LABEL_SUFFIXES table has no
+        private-suffix section -- both the cloud sandbox and the user's
+        local device_bash remain blocked from installing tldextract as of
+        the last pre-950 engineering patch (2026-09-17); see
+        research_protocol_v2.md Section 6-3 / 7-C item 5 / 7-D item 3 and
+        scripts/README.md. This replaces a prior version of this test that
+        asserted the WRONG behavior as a "PASS" -- that inverted framing
+        made a real defect look like a verified feature. With
+        expectedFailure, the test suite's own output shows "expected
+        failure" (not a silent pass) for as long as this is blocked.
+        BEFORE 950-site expansion is approved, Full PSL must be
+        implemented and this @unittest.expectedFailure decorator must be
+        REMOVED (an unexpected pass would then flag loudly that the
+        decorator is stale).
         """
         a = domain_utils.registrable_domain("foo.blogspot.com")
         b = domain_utils.registrable_domain("bar.blogspot.com")
-        self.assertEqual(a, b, "KNOWN LIMITATION: expected to incorrectly collapse until full PSL is implemented")
+        self.assertNotEqual(a, b)
+
+    # -- Item 1 (last pre-950 patch): content_scale_proxy evidence-group coverage --
+
+    def test_content_scale_proxy_in_all_groups(self):
+        proxy_ev_fields = [g[1] for g in evidence_harden.ALL_GROUPS if g[0] == "content_scale_proxy_value"]
+        self.assertEqual(proxy_ev_fields, ["content_scale_proxy_evidence"])
+
+    def test_evidence_cell_count_is_11_groups(self):
+        self.assertEqual(len(evidence_harden.ALL_GROUPS), 11)
+
+    def test_evidence_group_coverage_detects_missing_field(self):
+        fieldnames = [g[1] for g in evidence_harden.ALL_GROUPS] + ["mystery_field_evidence"]
+        missing, duplicated = evidence_harden.verify_group_coverage(fieldnames)
+        self.assertIn("mystery_field_evidence", missing)
+        self.assertEqual(duplicated, [])
+
+    def test_evidence_group_coverage_detects_duplicate_group(self):
+        fieldnames = [g[1] for g in evidence_harden.ALL_GROUPS]
+        extra_groups = evidence_harden.ALL_GROUPS + [evidence_harden.ALL_GROUPS[0]]
+        original = evidence_harden.ALL_GROUPS
+        try:
+            evidence_harden.ALL_GROUPS = extra_groups
+            missing, duplicated = evidence_harden.verify_group_coverage(fieldnames)
+            self.assertEqual(duplicated, [original[0][1]])
+        finally:
+            evidence_harden.ALL_GROUPS = original
+
+    def test_evidence_group_coverage_clean_for_real_schema(self):
+        import migrate_schema
+        missing, duplicated = evidence_harden.verify_group_coverage(migrate_schema.FIELDNAMES)
+        self.assertEqual(missing, [])
+        self.assertEqual(duplicated, [])
+
+    def test_content_scale_proxy_value_without_method_raises(self):
+        d = self._min_row(content_scale_proxy_value="1200", content_scale_proxy_method="UNKNOWN",
+                           content_scale_proxy_evidence="D", content_scale_proxy_note="sitemap URL count")
+        with self.assertRaises(evidence_harden.EvidenceHardenError):
+            evidence_harden.harden_row(d)
+
+    def test_content_scale_proxy_value_with_method_passes(self):
+        d = self._min_row(content_scale_proxy_value="1200", content_scale_proxy_method="sitemap URL count",
+                           content_scale_proxy_evidence="D", content_scale_proxy_note="counted sitemap.xml entries")
+        evidence_harden.harden_row(d)  # must not raise
+
+    def test_content_scale_proxy_gate_check_catches_missing_method(self):
+        row = self._min_row(content_scale_proxy_value="1200", content_scale_proxy_method="UNKNOWN")
+        bad = run_gate_v2.check_content_scale_proxy_method([row])
+        self.assertEqual(len(bad), 1)
+
+    def test_content_scale_proxy_gate_check_passes_when_unknown(self):
+        row = self._min_row(content_scale_proxy_value="UNKNOWN", content_scale_proxy_method="UNKNOWN")
+        bad = run_gate_v2.check_content_scale_proxy_method([row])
+        self.assertEqual(bad, [])
+
+
+class TestWaveTransactionOrdering(unittest.TestCase):
+    """
+    Item 5 (last pre-950 engineering patch, 2026-09-17): the coordinator
+    must never leave the registry saying COMMITTED while the master
+    dataset doesn't actually contain the merged rows. These tests (A, B, C
+    from the task spec) exercise wave_coordinator.run_wave()'s reordered
+    transaction directly against temp registry/master files, using
+    wave_coordinator._demo_research_fn as a stand-in worker (fabricates a
+    fully-UNKNOWN, Gate-clean synthetic row -- never real research).
+    """
+
+    def test_C_all_pass_commits_registry_and_merges_master(self):
+        with tempfile.TemporaryDirectory() as td:
+            registry_path = Path(td) / "registry.csv"
+            master_csv = Path(td) / "master.csv"
+            result = wave_coordinator.run_wave(
+                registry_path, master_csv, ["clean-c.test"], batch_id="T-C",
+                research_fn=wave_coordinator._demo_research_fn,
+            )
+            self.assertEqual(result["committed"], 1)
+            self.assertEqual(result["master_row_count_after_merge"], 1)
+            rows = registry.load_registry(registry_path)
+            self.assertEqual(rows[0]["status"], "COMMITTED")
+            _, master_rows = registry.load_master_rows(master_csv)
+            self.assertEqual(len(master_rows), 1)
+
+    def test_A_merge_failure_leaves_registry_reserved_and_master_untouched(self):
+        with tempfile.TemporaryDirectory() as td:
+            registry_path = Path(td) / "registry.csv"
+            master_csv = Path(td) / "master.csv"
+            # Pre-seed master with a row for the SAME domain the wave will
+            # research, WITHOUT registering it in the registry (simulates a
+            # desync where a domain already sits in master outside the
+            # coordinator's knowledge) -- this must fail compute_merge()'s
+            # raw-domain overlap check before anything is written/committed.
+            conflicting_row = wave_coordinator._demo_research_fn("dupe-domain.test")
+            registry.write_rows_csv(master_csv, list(conflicting_row.keys()), [conflicting_row])
+            original_master_content = master_csv.read_text(encoding="utf-8")
+
+            with self.assertRaises(wave_coordinator.WaveAbortedError):
+                wave_coordinator.run_wave(
+                    registry_path, master_csv, ["dupe-domain.test"], batch_id="T-A",
+                    research_fn=wave_coordinator._demo_research_fn,
+                )
+
+            rows = registry.load_registry(registry_path)
+            self.assertEqual(rows[0]["status"], "RESERVED", "must stay RESERVED, never COMMITTED, when merge fails")
+            self.assertEqual(master_csv.read_text(encoding="utf-8"), original_master_content, "master must be untouched")
+
+    def test_B_merged_master_gate_failure_leaves_registry_reserved_and_master_untouched(self):
+        with tempfile.TemporaryDirectory() as td:
+            registry_path = Path(td) / "registry.csv"
+            master_csv = Path(td) / "master.csv"
+            # Pre-seed master with a row that is INTERNALLY invalid (Rule #8
+            # violation, bypassing evidence_harden) for a DIFFERENT domain
+            # than the wave researches -- compute_merge() sees no domain
+            # overlap and succeeds, but the Gate run against the FULL merged
+            # row set must still fail because of this pre-existing bad row.
+            bad_row = wave_coordinator._demo_research_fn("already-broken.test")
+            bad_row["affiliate"] = "Y"
+            bad_row["affiliate_evidence"] = "UNKNOWN"
+            registry.write_rows_csv(master_csv, list(bad_row.keys()), [bad_row])
+            original_master_content = master_csv.read_text(encoding="utf-8")
+
+            with self.assertRaises(wave_coordinator.WaveAbortedError):
+                wave_coordinator.run_wave(
+                    registry_path, master_csv, ["clean-b.test"], batch_id="T-B",
+                    research_fn=wave_coordinator._demo_research_fn,
+                )
+
+            rows = registry.load_registry(registry_path)
+            self.assertEqual(rows[0]["status"], "RESERVED", "must stay RESERVED when the MERGED Gate fails")
+            self.assertEqual(master_csv.read_text(encoding="utf-8"), original_master_content, "master must be untouched")
+
+    def test_D_transition_validates_all_before_mutating_any(self):
+        """
+        commit_domains()/reject_domains() must validate every domain in the
+        call BEFORE mutating any of them -- a partially-invalid list must
+        not leave the earlier, valid domains half-transitioned.
+        """
+        rows = [
+            {"canonical_root_domain": "ok.test", "registrable_domain": "ok.test", "source_group": "t",
+             "category": "UNKNOWN", "sampling_stratum": "UNKNOWN", "status": "RESERVED", "batch_id": "B1"},
+            {"canonical_root_domain": "wrongbatch.test", "registrable_domain": "wrongbatch.test", "source_group": "t",
+             "category": "UNKNOWN", "sampling_stratum": "UNKNOWN", "status": "RESERVED", "batch_id": "B2"},
+        ]
+        with self.assertRaises(registry.RegistryStateError):
+            registry.commit_domains(rows, ["ok.test", "wrongbatch.test"], batch_id="B1")
+        self.assertEqual(rows[0]["status"], "RESERVED", "the valid domain processed first must NOT have been mutated")
 
 
 if __name__ == "__main__":

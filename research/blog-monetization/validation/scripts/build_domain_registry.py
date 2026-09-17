@@ -79,6 +79,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import domain_utils  # noqa: E402
+import schema_extend  # noqa: E402
 
 REGISTRY_FIELDNAMES = [
     "canonical_root_domain",
@@ -145,7 +146,21 @@ def check_duplicate(candidate_raw: str, rows) -> str | None:
     return hit["status"] if hit else None
 
 
-def _seed_from_study_csv(csv_path: Path, source_group: str, batch_id: str, status: str, domain_field: str):
+def _seed_from_study_csv(csv_path: Path, source_group: str, batch_id: str, status: str, domain_field: str,
+                          category_field: str = "category", category_map: dict | None = None):
+    """
+    `category_field` names the column to read the category from -- this
+    used to default to `primary_niche` (free text), which is exactly the
+    bug Item 4 of the last pre-950 patch fixed: registry `category` must
+    come from an actual closed-taxonomy column (`category` for the A0
+    production CSV, or the pilot study's own broad `category` column),
+    never from free-text `primary_niche`. `category_map`, when given,
+    translates the raw column value (e.g. the pilot's own category
+    strings) into the production taxonomy via
+    schema_extend.PRIOR_PILOT_CATEGORY_MAP -- see that dict's docstring
+    for why one pilot bucket keeps an explicit legacy pass-through value
+    instead of being force-mapped.
+    """
     with open(csv_path, newline="", encoding="utf-8") as f:
         study_rows = list(csv.DictReader(f))
     seeded = []
@@ -162,11 +177,13 @@ def _seed_from_study_csv(csv_path: Path, source_group: str, batch_id: str, statu
             duplicate_domains.append(domain)
             continue
         seen_registrable.add(reg)
+        raw_category = r.get(category_field, "UNKNOWN")
+        category = category_map.get(raw_category, raw_category) if category_map else raw_category
         seeded.append({
             "canonical_root_domain": domain,
             "registrable_domain": reg,
             "source_group": source_group,
-            "category": r.get("primary_niche", "UNKNOWN"),
+            "category": category,
             "sampling_stratum": r.get("sampling_stratum", "UNKNOWN"),
             "status": status,
             "batch_id": batch_id,
@@ -178,13 +195,44 @@ def _seed_from_study_csv(csv_path: Path, source_group: str, batch_id: str, statu
 
 
 def seed_committed_from_a0(a0_csv: Path):
+    # A0 production CSV already has a real `category` column (the closed
+    # CATEGORY_ENUM, since the last pre-950 patch) -- no mapping needed.
     return _seed_from_study_csv(a0_csv, source_group="Study A (A0)", batch_id="A0-cumulative-50",
-                                 status="COMMITTED", domain_field="canonical_root_domain")
+                                 status="COMMITTED", domain_field="canonical_root_domain",
+                                 category_field="category", category_map=None)
 
 
 def seed_excluded_from_pilot(pilot_csv: Path):
+    # pilot-100/sites.csv has its own broad `category` column (a 10-value
+    # taxonomy) -- translated to the production taxonomy via
+    # PRIOR_PILOT_CATEGORY_MAP (Item 4, last pre-950 patch). Previously
+    # this read `primary_niche` instead, which put free text in the
+    # registry's category column.
     return _seed_from_study_csv(pilot_csv, source_group="Pilot-100", batch_id="Pilot-100",
-                                 status="EXCLUDED_PRIOR_PILOT", domain_field="domain")
+                                 status="EXCLUDED_PRIOR_PILOT", domain_field="domain",
+                                 category_field="category", category_map=schema_extend.PRIOR_PILOT_CATEGORY_MAP)
+
+
+def validate_registry_categories(rows):
+    """
+    Item 4, last pre-950 patch: `category` must never be free-text
+    primary_niche. For COMMITTED rows it must be a real CATEGORY_ENUM
+    value (or UNKNOWN); for EXCLUDED_PRIOR_PILOT rows it must be one of
+    PRIOR_PILOT_CATEGORY_MAP's own mapped values (or UNKNOWN) -- i.e. an
+    explicit, documented prior-pilot mapping value, not an arbitrary
+    string. Returns a list of violations (empty = PASS).
+    """
+    violations = []
+    valid_committed = set(schema_extend.CATEGORY_ENUM) | {"UNKNOWN"}
+    valid_pilot = set(schema_extend.PRIOR_PILOT_CATEGORY_MAP.values()) | {"UNKNOWN"}
+    for r in rows:
+        cat = r["category"]
+        status = r["status"]
+        if status == "COMMITTED" and cat not in valid_committed:
+            violations.append((r["canonical_root_domain"], status, cat, "not in production CATEGORY_ENUM"))
+        elif status == "EXCLUDED_PRIOR_PILOT" and cat not in valid_pilot:
+            violations.append((r["canonical_root_domain"], status, cat, "not an explicit PRIOR_PILOT_CATEGORY_MAP value"))
+    return violations
 
 
 def reserve_domains(rows, candidates, batch_id, source_group="Study A (950-expansion)"):
@@ -218,8 +266,17 @@ def _transition(rows, domains, batch_id, target_status):
     coordinator bug (wrong batch_id, committing something never reserved,
     or trying to touch an immutable row) must be loud, never silently
     ignored or silently overwritten.
+
+    Validate-then-mutate (Item 5-D, last pre-950 patch): ALL `domains` are
+    validated first, in a single pass, with NO mutation. Only if every one
+    of them is legal does a second pass apply the mutation. This prevents
+    a bug the previous version had -- validating and mutating in the same
+    loop meant that if domain[0] was legal and domain[1] was not, domain[0]
+    would already be mutated by the time the loop raised on domain[1],
+    leaving a partial state change behind the exception.
     """
     idx = registry_index(rows)
+    validated_rows = []
     for d in domains:
         reg = domain_utils.registrable_domain(d)
         if reg not in idx:
@@ -242,6 +299,9 @@ def _transition(rows, domains, batch_id, target_status):
                 f"{d}: reserved under batch_id={row['batch_id']!r}, cannot be transitioned to {target_status} "
                 f"by a different batch_id={batch_id!r} -- another wave's reservation is off-limits."
             )
+        validated_rows.append(row)
+    # Every domain in this call is legal -- now, and only now, mutate.
+    for row in validated_rows:
         row["status"] = target_status
     return rows
 
@@ -256,33 +316,32 @@ def reject_domains(rows, domains, batch_id):
     return _transition(rows, domains, batch_id, "REJECTED")
 
 
-def merge_wave_into_master(wave_csv: Path, master_csv: Path):
-    """
-    Append a validated wave's rows (already Gate-PASSed on their own) into
-    the master Study A dataset CSV, checking for column-set match and
-    duplicate canonical_root_domain against the existing master rows.
-    Does not run the Gate itself -- callers must Gate-validate the wave
-    CSV (and ideally the merged master) before/after calling this.
-    """
-    with open(wave_csv, newline="", encoding="utf-8") as f:
-        wave_reader = csv.DictReader(f)
-        wave_fieldnames = wave_reader.fieldnames
-        wave_rows = list(wave_reader)
+def load_master_rows(master_csv: Path):
+    """Returns (fieldnames, rows); (None, []) if the master file doesn't exist yet."""
+    if not master_csv.exists():
+        return None, []
+    with open(master_csv, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        return reader.fieldnames, list(reader)
 
-    if master_csv.exists():
-        with open(master_csv, newline="", encoding="utf-8") as f:
-            master_reader = csv.DictReader(f)
-            master_fieldnames = master_reader.fieldnames
-            master_rows = list(master_reader)
-        if wave_fieldnames != master_fieldnames:
-            raise ValueError(
-                f"Column mismatch: wave file has {wave_fieldnames} but master has {master_fieldnames}"
-            )
-    else:
-        master_fieldnames = wave_fieldnames
-        master_rows = []
 
-    existing_domains = {r["canonical_root_domain"] for r in master_rows}
+def compute_merge(existing_fieldnames, existing_rows, wave_fieldnames, wave_rows):
+    """
+    Pure, in-memory merge-validation (Item 5, last pre-950 patch): checks
+    column-set match and BOTH raw-canonical-string and registrable-domain
+    duplicate overlap between `existing_rows` (the current master) and
+    `wave_rows`. Raises ValueError on any problem. Does NOT write
+    anything to disk and does NOT run the Gate -- callers are expected to
+    Gate the merged result (see wave_coordinator.run_wave) BEFORE writing
+    it anywhere, so a bad merge never touches the master file on disk.
+    """
+    if existing_fieldnames is not None and wave_fieldnames != existing_fieldnames:
+        raise ValueError(
+            f"Column mismatch: wave file has {wave_fieldnames} but master has {existing_fieldnames}"
+        )
+    fieldnames = existing_fieldnames if existing_fieldnames is not None else wave_fieldnames
+
+    existing_domains = {r["canonical_root_domain"] for r in existing_rows}
     new_domains = {r["canonical_root_domain"] for r in wave_rows}
     overlap = existing_domains & new_domains
     if overlap:
@@ -301,12 +360,36 @@ def merge_wave_into_master(wave_csv: Path, master_csv: Path):
             f"Duplicate registrable domain(s) between wave and master (raw strings may differ): {sorted(reg_overlap)}"
         )
 
-    merged = master_rows + wave_rows
-    with open(master_csv, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=master_fieldnames)
+    return fieldnames, existing_rows + wave_rows
+
+
+def write_rows_csv(path: Path, fieldnames, rows):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        for r in merged:
+        for r in rows:
             writer.writerow(r)
+
+
+def merge_wave_into_master(wave_csv: Path, master_csv: Path):
+    """
+    Back-compat / CLI convenience wrapper around compute_merge() +
+    write_rows_csv(): reads `wave_csv` from disk, validates+merges against
+    the current master, and writes the result to `master_csv` -- all in
+    one call, with no Gate check on the merged result in between. Kept for
+    callers (and existing tests) that don't need the Gate-before-write
+    ordering that wave_coordinator.run_wave() now uses directly via
+    compute_merge()/write_rows_csv() (Item 5, last pre-950 patch).
+    """
+    with open(wave_csv, newline="", encoding="utf-8") as f:
+        wave_reader = csv.DictReader(f)
+        wave_fieldnames = wave_reader.fieldnames
+        wave_rows = list(wave_reader)
+
+    existing_fieldnames, existing_rows = load_master_rows(master_csv)
+    fieldnames, merged = compute_merge(existing_fieldnames, existing_rows, wave_fieldnames, wave_rows)
+    write_rows_csv(master_csv, fieldnames, merged)
     return len(merged)
 
 
@@ -354,6 +437,18 @@ def main():
               "(a domain should never appear under two different statuses/sources):", file=sys.stderr)
         for reg, dom1, st1, dom2, st2 in dupes_found:
             print(f"  {reg}: {dom1} ({st1}) vs {dom2} ({st2})", file=sys.stderr)
+        return 1
+
+    # Item 4 (last pre-950 patch): category must never be free-text
+    # primary_niche -- hard FAIL, not a warning, same posture as the
+    # duplicate check above.
+    category_violations = validate_registry_categories(rows)
+    if category_violations:
+        print("FAIL: registry rows with an invalid `category` value "
+              "(must be a production CATEGORY_ENUM value or an explicit PRIOR_PILOT_CATEGORY_MAP value, "
+              "never free-text primary_niche):", file=sys.stderr)
+        for dom, status, cat, reason in category_violations:
+            print(f"  {dom} ({status}): category={cat!r} -- {reason}", file=sys.stderr)
         return 1
 
     out_path = Path(args.out)

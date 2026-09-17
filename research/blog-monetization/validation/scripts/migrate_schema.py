@@ -259,6 +259,17 @@ def build_rows(old: dict) -> list:
             d[field + "_evidence"] = ev
             d[field + "_source_url"] = url
             d[field + "_note"] = note
+        # content_scale_proxy_* (schema_extend.py) is only assigned in bulk
+        # AFTER all rows are built (see schema_extend.extend_rows_with_production_schema()
+        # near the end of build_rows() below), but evidence_harden.harden_row()
+        # now validates it too (it's part of ALL_GROUPS as of the last
+        # pre-950 patch) -- so a placeholder UNKNOWN-everything value must
+        # exist here first; schema_extend overwrites it identically afterward.
+        d["content_scale_proxy_value"] = "UNKNOWN"
+        d["content_scale_proxy_method"] = "UNKNOWN"
+        d["content_scale_proxy_evidence"] = "UNKNOWN"
+        d["content_scale_proxy_source_url"] = ""
+        d["content_scale_proxy_note"] = ""
         rows.append(evidence_harden.harden_row(d))
 
     # ---- 1. thomasjfrank.com ----
