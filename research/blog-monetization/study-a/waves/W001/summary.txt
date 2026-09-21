@@ -1,0 +1,4 @@
+batch_id: STUDY-A-W001
+committed: 50
+master_row_count_after_merge: 100
+registry_status_distribution: {'COMMITTED': 100, 'EXCLUDED_PRIOR_PILOT': 97, 'REJECTED': 4}

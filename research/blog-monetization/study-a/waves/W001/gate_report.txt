@@ -1,0 +1,116 @@
+=== Row count: 50 ===
+
+--- 1. Enum validation ---
+PASS: all boolean/evidence/enum fields (incl. traffic_scope, contrast_pattern) use only allowed values.
+
+--- 2. Mixed value+evidence in single cell check ---
+PASS: no mixed value+evidence strings found.
+
+--- 3. Duplicate canonical_root_domain check (registrable-domain based) ---
+PASS: all canonical_root_domain values are clean root form (no www./scheme/path).
+PASS: all 50 rows resolve to distinct registrable (eTLD+1) domains (domain_utils.registrable_domain).
+
+--- 4. Provenance / source_url validation (dedicated column required for A/B evidence -- note fallback NOT accepted) ---
+PASS: every field carrying A or B evidence has a valid http(s) URL in its own dedicated _source_url column (note-text URLs do not count).
+
+--- 5. Date-format validation ---
+PASS: all traffic_research_date / revenue_research_date cells are clean ISO (YYYY-MM-DD) or explicit UNKNOWN.
+
+--- 6. UNKNOWN value implies UNKNOWN evidence (Rule #8) ---
+PASS: every UNKNOWN-valued field carries UNKNOWN evidence.
+
+--- 7. traffic_scope / traffic_tier consistency check (Section 4-1 rule) ---
+traffic_scope distribution: {'CONTENT_ONLY': 50}
+PASS: traffic_tier correctly forced to UNKNOWN wherever traffic_scope is WHOLE_DOMAIN_INCLUDES_PRODUCT or UNKNOWN, and raw traffic values remain preserved.
+Sites flagged as whole-domain (excluded from content-level traffic_tier comparisons, raw value retained): []
+
+--- 8. contrast_pattern structure check ---
+  introvertwhisperer.com: contrast_pattern=cadence_drop, evidence_period='Most recent visible post April 2022; no confirmed newer posts through Sept 2026 ...'
+  rootsimple.com: contrast_pattern=cadence_drop, evidence_period='5 posts across Sept 2025-May 2026 vs. an extensive multi-year archive (757 pages...'
+  yougrowgirl.com: contrast_pattern=cadence_drop, evidence_period='Most recent dated post ~Feb 2022; no confirmed new posts through Sept 2026 (~4+ ...'
+  coldclimategardening.com: contrast_pattern=cadence_drop, evidence_period='Most recent post Feb 2025 (over a year stale as of Sept 2026) vs. a continuous a...'
+  codinghorror.com: contrast_pattern=cadence_drop, evidence_period='Dramatic cadence drop beginning circa 2008-2010 (Stack Overflow/Discourse foundi...'
+  henrikwarne.com: contrast_pattern=cadence_drop, evidence_period='Multiple posts/month (2011-2016) down to ~1 post per 2-4 months (2024-2026), per...'
+  legalnomads.com: contrast_pattern=historically_declined, evidence_period='Chronic illness (CSF leak) since 2017 permanently reduced travel/output; operato...'
+  youngadventuress.com: contrast_pattern=cadence_drop, evidence_period='Most recent post July 2024; no confirmed newer posts through Sept 2026 (~2+ year...'
+  marksdailyapple.com: contrast_pattern=historically_declined, evidence_period='Site has structurally transitioned from a large independent blog operation to a ...'
+  strobist.blogspot.com: contrast_pattern=shutdown, evidence_period='Published 2006-2021; confirmed inactive/archival-only since 2021 (per the site's...'
+  manrepeller.com: contrast_pattern=shutdown, evidence_period='Ceased operations October 28, 2020, per contemporaneous press reporting (Fashion...'
+
+--- 9. Dimension-independence check (sampling_stratum vs traffic_tier vs is_niche_authority vs is_contrast_case) ---
+  careercontessa.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  classycareergirl.com: stratum=Large/Traffic Leader | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  careerattraction.com: stratum=Large/Traffic Leader | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  careersidekick.com: stratum=Mid-scale Active Site | traffic_tier=LOW | is_niche_authority=N | is_contrast_case=UNKNOWN
+  careerpivot.com: stratum=Mid-scale Active Site | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  bossedup.org: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  careersherpa.net: stratum=Narrow Niche Authority | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  eatyourcareer.com: stratum=Narrow Niche Authority | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  keppiecareers.com: stratum=Narrow Niche Authority | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  introvertwhisperer.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=Y
+  floretflowers.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  growveg.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  gardenrant.com: stratum=Large/Traffic Leader | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  gardentherapy.ca: stratum=Mid-scale Active Site | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  simplifygardening.com: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  thesurvivalgardener.com: stratum=Narrow Niche Authority | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  selfsufficientme.com: stratum=Narrow Niche Authority | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  rootsimple.com: stratum=Contrast Cohort | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=Y
+  yougrowgirl.com: stratum=Contrast Cohort | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=Y
+  coldclimategardening.com: stratum=Contrast Cohort | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=Y
+  techiedelight.com: stratum=Large/Traffic Leader | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  reactgo.com: stratum=Mid-scale Active Site | traffic_tier=LOW | is_niche_authority=N | is_contrast_case=UNKNOWN
+  ezzylearning.net: stratum=Mid-scale Active Site | traffic_tier=UNKNOWN | is_niche_authority=N | is_contrast_case=UNKNOWN
+  code4it.dev: stratum=Mid-scale Active Site | traffic_tier=LOW | is_niche_authority=N | is_contrast_case=UNKNOWN
+  tyrrrz.me: stratum=Mid-scale Active Site | traffic_tier=LOW | is_niche_authority=N | is_contrast_case=UNKNOWN
+  jeremykun.com: stratum=Narrow Niche Authority | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  thegreenplace.net: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  davidwalsh.name: stratum=Narrow Niche Authority | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  codinghorror.com: stratum=Contrast Cohort | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=Y
+  henrikwarne.com: stratum=Contrast Cohort | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=Y
+  bemytravelmuse.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  findingtheuniverse.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  atlasandboots.com: stratum=Mid-scale Active Site | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  indietraveller.co: stratum=Mid-scale Active Site | traffic_tier=MID | is_niche_authority=N | is_contrast_case=UNKNOWN
+  stingynomads.com: stratum=Mid-scale Active Site | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  neverendingfootsteps.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  nomadasaurus.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  breathedreamgo.com: stratum=Narrow Niche Authority | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  legalnomads.com: stratum=Contrast Cohort | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=Y
+  youngadventuress.com: stratum=Contrast Cohort | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=Y
+  becomingminimalist.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  winefolly.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  theminimalists.com: stratum=Large/Traffic Leader | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  wornandwound.com: stratum=Mid-scale Active Site | traffic_tier=HIGH | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  precisionnutrition.com: stratum=Mid-scale Active Site | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  breakingbourbon.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  thephoblographer.com: stratum=Narrow Niche Authority | traffic_tier=MID | is_niche_authority=Y | is_contrast_case=UNKNOWN
+  marksdailyapple.com: stratum=Contrast Cohort | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=Y
+  strobist.blogspot.com: stratum=Contrast Cohort | traffic_tier=LOW | is_niche_authority=Y | is_contrast_case=Y
+  manrepeller.com: stratum=Contrast Cohort | traffic_tier=UNKNOWN | is_niche_authority=Y | is_contrast_case=Y
+Example of dimension mismatch surfaced (stratum=Large/Traffic Leader but traffic_tier=LOW): ['classycareergirl.com', 'gardenrant.com', 'techiedelight.com']
+
+--- 10. Denominator automation test ---
+  affiliate: 17 of 24 confirmed = Y (direct column filter, no parsing)
+  display_ads: 10 of 27 confirmed = Y (direct column filter, no parsing)
+  own_product: 36 of 44 confirmed = Y (direct column filter, no parsing)
+  is_niche_authority: 43 of 50 confirmed = Y (direct column filter, no parsing)
+  is_contrast_case: 11 of 11 confirmed = Y (direct column filter, no parsing)
+PASS: denominators computable via direct column filter across all migrated fields.
+
+--- 11. Value/evidence directional consistency (non-UNKNOWN value requires non-UNKNOWN evidence) ---
+PASS: every field with a non-UNKNOWN value carries a real (non-UNKNOWN) evidence tier.
+
+--- 12. D-tier evidence must carry a note ---
+PASS: every D-tier (reasoned inference) field has a non-empty note explaining the reasoning.
+
+--- 13. revenue_value format/type check (Study A is not a revenue study) ---
+PASS: every revenue_value is either UNKNOWN or a single clean structured figure (no free text, no compound multi-period figures, no acquisition/purchase prices).
+
+--- 14. Evidence-group coverage check (every *_evidence column belongs to exactly one evidence_harden group) ---
+PASS: every *_evidence column in the schema belongs to exactly one evidence_harden.ALL_GROUPS entry (no missing, no duplicated).
+
+--- 15. content_scale_proxy_value requires content_scale_proxy_method ---
+PASS: every non-UNKNOWN content_scale_proxy_value carries a non-UNKNOWN content_scale_proxy_method.
+
+VALIDATION GATE PASS -- rows=50
