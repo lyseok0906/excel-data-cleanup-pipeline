@@ -11,15 +11,15 @@
 
 | Keyword | Search Intent | 등급(QA policy) | Evidence | Draft | QA(Tech/SEO/EN) | Human Approval | Publish | 파일 |
 |---|---|---|---|---|---|---|---|---|
-| numbers stored as text bulk convert | How-to / Task | Simple Task | 완료 — Pilot F 재현 + 신규 fixture(`fixtures/numbers-stored-as-text-bulk-convert_fixture.xlsx`, 5개 method별 시트, NBSP 실제 문자 포함)로 보강. 스크린샷은 미확보(비차단, 실제 발행 전 필요) | 완료 — 운영 Draft로 전환 (`content/numbers-stored-as-text-bulk-convert.md`) | PASS/PASS/PASS (QA 패키지: `content/numbers-stored-as-text-bulk-convert_qa.md`) | 요청됨 — 이번 운영 전환분은 Pilot 단계의 포괄 승인과 별개로 개별 승인 대기 (CONTENT READY FOR HUMAN APPROVAL) | 미발행 | `content/numbers-stored-as-text-bulk-convert.md` (구 `content/pilot_F_numbers_as_text.md`는 원본 보존용으로 유지) |
-| remove blank rows without breaking formulas | Troubleshooting / Fix | Edge-case Guide | 완료 (fixture 결함 2건 수정 후 재현, PASS) | 완료 | PASS/PASS/PASS (Pilot 단계에서 완료) | 승인 (FULL GO에 포함) | 미발행 | `content/pilot_G_remove_blank_rows.md` |
-| power query remove duplicates (integrated guide) | Integrated / Reference guide | High-risk Integrated Guide | 완료 (Pilot A, 다중 fixture·독립검증) | 완료 (Pilot 단계 원고) | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 (Claude Project 로그에 원고 있음) |
-| excel split comma separated values into rows | Comparison / Method choice | High-risk Integrated Guide | 완료 (Pilot B) | 완료 (Pilot 단계 원고) | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 |
-| TRIM vs CHAR(160)/NBSP | Troubleshooting / Fix | Simple Task (실측 개입 높음) | 완료 (Pilot C, UNICHAR(160) 정정 반영) | 완료 (Pilot 단계 원고) | 완료 (Pilot 단계) | 승인 (조건부 — 원고에 UNICHAR 반영 확인 필요) | 미발행 | 아직 repo 미이관 |
-| Power Query null vs "" | Edge-case Guide | Edge-case Guide | 완료 (Pilot D) | 완료 (Pilot 단계 원고) | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 |
-| Excel 2021 UNIQUE 대체 legacy fallback | Comparison / Method choice | Simple Task | 완료 (Pilot E) | 완료 (Pilot 단계 원고) | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 |
+| numbers stored as text bulk convert | How-to / Task | Simple Task | 완료 — Pilot F 재현 + 신규 fixture(`fixtures/numbers-stored-as-text-bulk-convert_fixture.xlsx`, 5개 method별 시트, NBSP 실제 문자 포함)로 보강. 스크린샷 확보 완료(영어 UI로 재캡처, 5장 크롭 완료) | 완료 — 운영 Draft로 전환 (`content/numbers-stored-as-text-bulk-convert.md`) | PASS/PASS/PASS (QA 패키지: `content/numbers-stored-as-text-bulk-convert_qa.md`) | 요청됨 — 이번 운영 전환분은 Pilot 단계의 포괄 승인과 별개로 개별 승인 대기 (CONTENT READY FOR HUMAN APPROVAL) | **발행됨 (2026-09-16, post ID 7, cleansheethq.com/numbers-stored-as-text-bulk-convert/)** | `content/numbers-stored-as-text-bulk-convert.md` (구 `content/pilot_F_numbers_as_text.md`는 원본 보존용으로 유지) |
+| remove blank rows without breaking formulas | Troubleshooting / Fix | Edge-case Guide | 완료 (fixture 결함 2건 수정 후 재현, PASS) | **완료 — 운영 Draft로 전환** (`content/excel-remove-blank-rows-guide.md`, 2026-09-21). 원본 Pilot 원고(`content/pilot_G_remove_blank_rows.md`)는 보존용으로 유지 | Technical: 소스 3건 재확인 완료(COUNTA, #REF!, Go To Special 공식문서) / SEO: 초안 반영(focus keyword "remove blank rows excel") / EN: Pilot 단계에서 이미 자연스러운 US English로 확인됨 — **3종 모두 초벌 PASS, 별도 QA 패키지 문서는 아직 작성 안 함(F처럼 정식 `_qa.md`는 스크린샷 확보 후 작성 예정)** | 승인 (FULL GO에 포함) — 단, 이번 운영 전환분 자체의 개별 승인은 스크린샷 확보 후 재확인 예정 | 미발행 — **영어 UI 스크린샷 미확보가 유일한 차단 요인** (Go To Special 대화상자, Blanks 선택 결과, COUNTA 헬퍼 열, 삭제 후 #REF! 결과 등 4~5장 필요) | `content/excel-remove-blank-rows-guide.md` |
+| power query remove duplicates (integrated guide) | Integrated / Reference guide | High-risk Integrated Guide | 완료 (Pilot A, 다중 fixture·독립검증) | 완료 (Pilot 단계 원고) — **원본 원고 텍스트가 이 repo에 없음, Claude Project 결정 로그에는 요약만 있음. 운영 Draft 전환 전 원본 원고 소재 확인 필요** | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 (Claude Project 로그에 요약만 있음 — 전체 원고 소재 확인 필요) |
+| excel split comma separated values into rows | Comparison / Method choice | High-risk Integrated Guide | 완료 (Pilot B) | 완료 (Pilot 단계 원고) — 원본 원고 소재 확인 필요(위와 동일) | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 |
+| TRIM vs CHAR(160)/NBSP | Troubleshooting / Fix | Simple Task (실측 개입 높음) | 완료 (Pilot C, UNICHAR(160) 정정 반영) | 완료 (Pilot 단계 원고) — 원본 원고 소재 확인 필요(위와 동일) | 완료 (Pilot 단계) | 승인 (조건부 — 원고에 UNICHAR 반영 확인 필요) | 미발행 | 아직 repo 미이관 |
+| Power Query null vs "" | Edge-case Guide | Edge-case Guide | 완료 (Pilot D) | 완료 (Pilot 단계 원고) — 원본 원고 소재 확인 필요(위와 동일) | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 |
+| Excel 2021 UNIQUE 대체 legacy fallback | Comparison / Method choice | Simple Task | 완료 (Pilot E) | 완료 (Pilot 단계 원고) — 원본 원고 소재 확인 필요(위와 동일) | 완료 (Pilot 단계) | 승인 (FULL GO에 포함) | 미발행 | 아직 repo 미이관 |
 
-**참고**: Pilot A~E는 원고가 아직 이 repo의 `content/`로 이관되지 않았다(우선순위 낮음, `docs/pilot_results.md` 참고). 이관 시 이 표의 "파일" 컬럼을 갱신한다.
+**참고**: Pilot A~E는 원고 원문이 아직 이 repo의 `content/`로 이관되지 않았고, Claude Project 결정 로그에도 요약([Designed]/[Observed]/[Decision])만 있을 뿐 발행 가능한 전체 원고 텍스트는 남아있지 않다. 이 5건을 운영 Draft로 전환하려면 (a) 원본 원고를 어딘가에서 찾아오거나(예: 과거 ChatGPT 대화 기록), (b) 결정 로그의 기술적 사실관계를 근거로 원고를 새로 작성해야 한다 — 후자는 "새 리서치"가 아니라 "이미 검증된 사실을 다시 글로 쓰는 작업"이다.
 
 ## 다음에 추가할 키워드 (아직 착수 전)
 
@@ -27,4 +27,4 @@
 
 ---
 
-*최초 작성: 2026-09-15 (로드맵 5단계). Pilot A~G 초기 상태는 `docs/pilot_results.md`와 Claude Project 결정 로그를 근거로 이 표에 옮겨 적었다.*
+*최초 작성: 2026-09-15 (로드맵 5단계). Pilot A~G 초기 상태는 `docs/pilot_results.md`와 Claude Project 결정 로그를 근거로 이 표에 옮겨 적었다. 2026-09-16: Pilot F 발행 완료(영어 UI 스크린샷 교체 포함) 반영. 2026-09-21: Pilot G를 운영 Draft(`excel-remove-blank-rows-guide.md`)로 전환, Pilot A~E는 원본 원고 소재 확인이 필요함을 명시.*
