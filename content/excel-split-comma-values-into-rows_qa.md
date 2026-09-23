@@ -95,6 +95,22 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 
 ## 8. Final Verdict
 
-**DRAFT — TECHNICALLY SOUND PER EXISTING RECORDS AND OFFICIAL DOCS, NOT YET EVIDENCE-COMPLETE.**
+**DRAFT — REVISION APPLIED (2026-09-23) PER INDEPENDENT QA — TECHNICALLY SOUND PER EXISTING RECORDS AND OFFICIAL DOCS, NOT YET EVIDENCE-COMPLETE.**
 
-Rationale: 6 of 7 technical claims trace directly to an official Microsoft page or an already-verified project reproduction (the Excel 2021 `#NAME?` finding). One claim (Power Query's blank-row handling) is disclosed as an unverified inference rather than presented as confirmed. No new research or Excel reproduction was performed this round. Same as Pilot A, this article is **not** yet CONTENT READY — its High-risk Integrated Guide grade requires fixture-backed screenshots, and none exist yet (§4). Next in sequence: Pilot C.
+Rationale: the article's remaining technical claims trace directly to an official Microsoft page or an already-verified project reproduction (the Excel 2021 `#NAME?` finding). The two Power Query claims that were not backed by either (blank-row handling and multiple-delimiter support) are now stated as explicitly unverified rather than presented as fact — see §9. No new research or Excel reproduction was performed this round. Same as Pilot A, this article is **not** yet CONTENT READY — its High-risk Integrated Guide grade requires fixture-backed screenshots, and none exist yet (§4). Awaiting re-confirmation before this Pilot is considered content-approved.
+
+## 9. Revision Round — ChatGPT Independent QA (2026-09-23)
+
+**Verdict received:** 수정 필요 (revision required).
+
+**Issues raised:**
+1. The article stated as fact that Power Query's Split Column by Delimiter dialog supports "Custom" with multiple delimiters entered together, or running the split step twice for mixed delimiter types — this claim was never in the QA claim map (§2) and had not been verified by this project, unlike `TEXTSPLIT`'s documented delimiter-array argument.
+2. The article stated as fact that Power Query's split-into-rows step has no single toggle for skipping blank results and that a filter step afterward is required — already flagged in §2 as Finding F (an inference, not a verified result), but the article's own wording was more confident than the disclosure in this QA package warranted.
+
+**Changes made:**
+1. Removed the "use Custom and enter each delimiter, or run the split step twice" claim from Method 2, and replaced it with an explicit statement that the dialog takes one delimiter per step and that mixed-delimiter behavior "has not been tested" by this project.
+2. Rewrote the blank-row-handling paragraph in Method 2 to state plainly that this project has not independently reproduced Power Query's behavior on consecutive delimiters or confirmed whether a built-in skip option exists, rather than asserting "does not have a single toggle" as a confirmed mechanism.
+3. Updated the comparison table's "Skips blank splits" and "Multiple delimiters" rows for Power Query to say "not independently verified" instead of describing a specific mechanism.
+4. Updated the one-line summary and the Sources footnote to match — both now state plainly that Power Query's blank-row and multi-delimiter behavior for this step has not been verified by this project.
+
+**Not changed:** the TEXTSPLIT-side claims (row_delimiter, ignore_empty, delimiter array, Microsoft 365/2024 scoping, and the Excel 2021 `#NAME?` reproduction) — these are backed by the official Microsoft page or a project-verified reproduction and were not disputed by the QA.

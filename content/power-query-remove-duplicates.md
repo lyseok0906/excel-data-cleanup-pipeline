@@ -7,7 +7,7 @@ focus_keyword: "power query remove duplicates"
 internal_link_candidates:
   - "excel-remove-blank-rows-guide" # published-pending Pilot G article — link from the "cleanup workflow" angle
   - "excel-split-comma-values-into-rows" # candidate future article (Pilot B), not yet converted to production — do not link until it exists
-status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — screenshots not yet captured (see QA package)"
+status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — screenshots not yet captured (see QA package) — revised 2026-09-23 per independent QA"
 ---
 
 # Power Query Remove Duplicates: Latest Row, Ties & Nulls
@@ -37,6 +37,14 @@ Table.Group(Source, {"CustomerID"},
 ```
 
 Read this as: "group all rows by `CustomerID`; within each group, sort by `SortColumn` descending, and keep only the first row of that sorted group." Change what you sort by, and you change which row survives.
+
+`Table.Group` with this aggregation produces a table with one column per grouping key plus a `Chosen` column holding a **record** (the whole winning row, packaged as one value) — not yet a normal flat table. Every case below needs one more step to turn that back into real columns:
+
+```
+Table.ExpandRecordColumn(GroupedResult, "Chosen", Table.ColumnNames(Source))
+```
+
+This expands the `Chosen` record into its own set of columns, using the original table's column names, giving you a normal table with one row per group. Each case in this guide produces a grouped-and-sorted table exactly like `GroupedResult` above; add this expand step as the final step in every case to get the actual result table.
 
 ## Case 1: Basic Duplicate Key
 
@@ -78,27 +86,30 @@ Rows with a blank or `null` key deserve a deliberate decision, not an accident. 
 
 Before grouping, decide explicitly:
 
-- If blank-key rows are genuinely bad data, filter them out first with `Table.SelectRows(Source, each [CustomerID] <> null)` and handle them separately.
+- **Decide whether `null` and `""` (empty string) both count as "missing" for this key.** They are not the same value — `Table.Group` treats `null` as its own group and an empty-string key as a different group from `null` — so a filter written as `<> null` will still group every `""` key together and silently keep only one of those rows. If both should be treated as missing, filter both explicitly: `Table.SelectRows(Source, each [CustomerID] <> null and [CustomerID] <> "")`.
+- If blank-key rows are genuinely bad data, filter them out first (using the `null`-and-`""` check above, as appropriate to your data) and handle them separately.
 - If blank-key rows are all real, distinct records that happen to be missing an ID, do **not** group them with the rest — route them around the deduplication step entirely (for example, split the table into "has ID" and "no ID" with `Table.SelectRows`/`Table.SelectRows` on the negated condition, deduplicate only the "has ID" side, then combine the results back with `Table.Combine`).
 
-The mistake this case guards against is exactly the same shape as the null-vs-empty-string distinction documented elsewhere for this project: Power Query does not treat every "missing" value the same way depending on how it got there, so blank keys need an explicit rule instead of being left to fall through the default grouping behavior.
+The mistake this case guards against is exactly the same shape as the null-vs-empty-string distinction documented elsewhere for this project: Power Query does not treat every "missing" value the same way depending on how it got there, so blank keys need an explicit rule — one that names both `null` and `""` — instead of being left to fall through the default grouping behavior.
 
 ## Case 5: Same-Date Ties
 
 Sorting by date breaks most duplicates, but two rows can share the exact same date. Sorting by date alone leaves the outcome ambiguous — Power Query will pick a row, but which one depends on the stability of the sort, not a rule you chose.
 
-Add a second, deterministic sort key as a tiebreaker. This project's own live-test reproduction confirmed the following pattern actually executes and resolves ties predictably, using a row identifier as the tiebreaker after the date:
+Add a second, deterministic sort key as a tiebreaker. Starting from the `UpdatedDate` column already used in Case 2, sort by date descending first, and add a row identifier as the second sort key to decide any tie:
 
 ```
-Table.Group(WithSortDate, {"CustomerID"},
+Table.Group(Source, {"CustomerID"},
   {{"Chosen", each Table.First(Table.Sort(_, {
-      {"_SortDate", Order.Descending},
+      {"UpdatedDate", Order.Descending},
       {"RowID", Order.Descending}
     })), type record}}
 )
 ```
 
-Sort by `_SortDate` descending first; when two rows tie on that date, the second sort key (`RowID` descending) decides the winner. Whatever you choose as the tiebreaker — a row ID, an import timestamp, a secondary sequence number — the important part is that it's a column that is *never* itself tied, so the result is reproducible every time you refresh the query.
+When two rows tie on `UpdatedDate`, the second sort key (`RowID` descending) decides the winner. Whatever you choose as the tiebreaker — a row ID, an import timestamp, a secondary sequence number — the important part is that it's a column that is *never* itself tied, so the result is reproducible every time you refresh the query.
+
+This pattern assumes every row has a real date. The next case (null dates) shows what to do when that's not true, and how the tie-break code above needs to change once you've handled it.
 
 ## Case 6: Null Dates
 
@@ -109,6 +120,19 @@ _SortDate = if [OrderDate] = null then #date(1900,1,1) else [OrderDate]
 ```
 
 This guarantees rows with a genuinely missing date always sort as the *oldest* record for that customer (so a row with real data wins the "keep latest" comparison), rather than causing an error or an unpredictable sort position.
+
+**Combining this with Case 5's tie-break:** once you have the `_SortDate` helper column, use it in place of `UpdatedDate` in the Case 5 pattern, so the tie-break is safe against both same-date ties and null dates at once. This project's own live-test reproduction confirmed the following combined pattern actually executes and resolves ties predictably:
+
+```
+Table.Group(WithSortDate, {"CustomerID"},
+  {{"Chosen", each Table.First(Table.Sort(_, {
+      {"_SortDate", Order.Descending},
+      {"RowID", Order.Descending}
+    })), type record}}
+)
+```
+
+`WithSortDate` here is the table after the `_SortDate` helper column from this case has been added (for example, via `Table.AddColumn(Source, "_SortDate", each if [OrderDate] = null then #date(1900,1,1) else [OrderDate])`). This is the version to use in practice whenever your data can have both same-date ties and null dates, which is the common case.
 
 ## Case 7: Query Folding
 

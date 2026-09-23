@@ -102,6 +102,22 @@ Planned fixture (for a future round, once the user confirms): one workbook with 
 
 ## 8. Final Verdict
 
-**DRAFT — TECHNICALLY SOUND PER EXISTING RECORDS, NOT YET EVIDENCE-COMPLETE.**
+**DRAFT — REVISION APPLIED (2026-09-23) PER INDEPENDENT QA — TECHNICALLY SOUND PER EXISTING RECORDS, NOT YET EVIDENCE-COMPLETE.**
 
-Rationale: every technical claim in the article is either a direct restatement of something the decision log already records as independently verified (Cases 5 and 7, the built-in Remove Duplicates behavior, the `Table.Distinct` folding caveat), or a standard, officially-documented Power Query mechanism presented without a fabricated reproduction claim (Cases 1–4, 6, 8, disclosed in Finding D). No new research or Excel reproduction was performed this round, per instruction. The article is **not** yet CONTENT READY, because — unlike Pilot F/G — this High-risk Integrated Guide grade calls for fixture-backed screenshots across its 8 cases, and none exist yet (§4). This is expected to be the next round for this topic, separate from writing Pilots B–E.
+Rationale: every technical claim in the article is either a direct restatement of something the decision log already records as independently verified (Cases 5 and 7, the built-in Remove Duplicates behavior, the `Table.Distinct` folding caveat), or a standard, officially-documented Power Query mechanism presented without a fabricated reproduction claim (Cases 1–4, 6, 8, disclosed in Finding D). No new research or Excel reproduction was performed this round, per instruction. The article is **not** yet CONTENT READY, because — unlike Pilot F/G — this High-risk Integrated Guide grade calls for fixture-backed screenshots across its 8 cases, and none exist yet (§4). See §9 for the round of fixes just applied per independent ChatGPT QA; awaiting re-confirmation before this Pilot is considered content-approved.
+
+## 9. Revision Round — ChatGPT Independent QA (2026-09-23)
+
+**Verdict received:** 수정 필요 (revision required).
+
+**Issues raised:**
+1. `Table.Group(... "Chosen" ...)` produces a table of grouping keys plus a `Chosen` **record** column — the article never showed the step that expands that record back into real columns, so the guide stopped short of a usable result table.
+2. Case 5 (Same-Date Ties) referenced `WithSortDate`, a table that had not yet been introduced at that point in the article — it is only created in Case 6 (Null Dates), which comes after it.
+3. Case 4 says to handle "blank or null" keys but the example filter (`[CustomerID] <> null`) only excludes `null`, not an empty-string (`""`) key — leaving the empty-string case unaddressed despite the case's own title.
+
+**Changes made:**
+1. Added a new paragraph and code block right after "The Building Block" section introducing `Table.ExpandRecordColumn(GroupedResult, "Chosen", Table.ColumnNames(Source))`, explaining that every case's `Table.Group` output needs this step to become a normal flat table, and telling the reader to add it as the final step in every case.
+2. Reordered the tie-break exposition: Case 5 now shows a self-contained tie-break using `UpdatedDate` (already introduced in Case 2) with no forward reference. Case 6 (Null Dates) still introduces the `_SortDate` helper column, and a new paragraph at the end of Case 6 shows the combined `_SortDate`-based version of the Case 5 pattern (this is where the original exact-verified code moved to, unchanged), explicitly defining what `WithSortDate` refers to.
+3. Rewrote Case 4 to explicitly name `""` as a separate case from `null` (since `Table.Group` treats them as different group values), added a bullet instructing the reader to decide whether both count as "missing," and gave the two-condition filter `Table.SelectRows(Source, each [CustomerID] <> null and [CustomerID] <> "")` as the version to use when they do.
+
+**Not changed:** the underlying verified facts (the exact `_SortDate`/`RowID` tie-break M code and the query-folding "not applicable" determination for an in-workbook source, both confirmed by this project's LIVE TEST reproduction) — these were not disputed by the QA and remain exactly as extracted from the decision log, just relocated to close the forward-reference gap.

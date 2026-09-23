@@ -7,7 +7,7 @@ focus_keyword: "excel split comma separated values into rows"
 internal_link_candidates:
   - "power-query-remove-duplicates" # Pilot A, production draft exists — not yet published, do not link until it exists
   - "excel-remove-blank-rows-guide" # Pilot G, production draft exists — not yet published, do not link until it exists
-status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — fixture and screenshots not yet captured"
+status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — fixture and screenshots not yet captured — revised 2026-09-23 per independent QA"
 ---
 
 # Split Comma-Separated Values into Rows in Excel (TEXTSPLIT vs Power Query)
@@ -51,9 +51,9 @@ Power Query's **Split Column by Delimiter**, using the **Rows** option instead o
 5. Under **Split into**, choose **Rows** instead of the default **Columns**.
 6. Click **OK**, then **Close & Load**.
 
-Unlike `TEXTSPLIT`'s `ignore_empty` argument, Power Query's split-into-rows step does not have a single toggle for skipping blank results — if you need to drop blank rows produced by consecutive delimiters, add a filter step afterward (for example, filter the split column to exclude blank/null values) rather than relying on the split step itself to skip them.
+The **Split Column by Delimiter** dialog takes a single delimiter per step (Comma, Semicolon, or one Custom value you type in) — it does not have `TEXTSPLIT`'s array-of-delimiters argument for mixing delimiter types in one pass. If your data mixes delimiter types, you would likely need to run the split step more than once or normalize the delimiters first; this project has not tested that scenario in Power Query, so treat it as something to verify against your own data rather than a confirmed recipe.
 
-For multiple delimiters in the same column, use **Custom** and enter each delimiter, or run the split step twice (once per delimiter) if your data mixes delimiter types inconsistently.
+This project has also not independently reproduced how the split-into-rows step behaves on consecutive delimiters (for example, `Apple,,Cherry`) — unlike `TEXTSPLIT`'s documented `ignore_empty` argument, whether Power Query produces a blank row there, and whether it offers a built-in option to skip it, has not been verified here. If you see unwanted blank rows after splitting, filtering the result column afterward is the general-purpose fix, but this article does not claim to have confirmed there is no built-in toggle for it.
 
 ## Which Method Should You Use?
 
@@ -61,17 +61,17 @@ For multiple delimiters in the same column, use **Custom** and enter each delimi
 |---|---|---|
 | Excel version | Microsoft 365, Excel 2024 only | 2016, 2019, 2021, 2024, Microsoft 365 (all versions) |
 | Result type | Formula (recalculates automatically when source cell changes) | Query (needs "Refresh" to pick up source changes) |
-| Skips blank splits | Yes, via `ignore_empty` argument | Not directly — filter afterward |
-| Multiple delimiters | Yes, via a delimiter array | Yes, via Custom delimiter entry or repeated split steps |
+| Skips blank splits | Yes, via `ignore_empty` argument | Not independently verified in this project — filter afterward if you see blanks |
+| Multiple delimiters | Yes, via a delimiter array | Not verified in this project — the dialog takes one delimiter per step |
 
 If you're on Microsoft 365 or Excel 2024, `TEXTSPLIT` is simpler for a one-off, self-updating formula. If you're on an older version, or you're already building a Power Query pipeline for other cleanup steps, the Power Query method keeps everything in one place and doesn't depend on a specific Excel version.
 
 ## One-line Summary
 
-Use `TEXTSPLIT(cell, , delimiter)` to split values into rows on Microsoft 365 or Excel 2024. On Excel 2021, 2019, or 2016 — where `TEXTSPLIT` returns `#NAME?` — use Power Query's **Split Column > By Delimiter**, choosing **Rows** instead of **Columns**, and filter out blank results afterward since there's no built-in "ignore empty" toggle in that step.
+Use `TEXTSPLIT(cell, , delimiter)` to split values into rows on Microsoft 365 or Excel 2024. On Excel 2021, 2019, or 2016 — where `TEXTSPLIT` returns `#NAME?` — use Power Query's **Split Column > By Delimiter**, choosing **Rows** instead of **Columns**. This project has not independently verified Power Query's blank-row or multi-delimiter behavior for that step, so check your own results and filter afterward if needed.
 
 ## Sources
 
 - [TEXTSPLIT function](https://support.microsoft.com/en-us/excel/functions/textsplit-function) — Microsoft Support. Backs the `row_delimiter`, `ignore_empty`, and multiple-delimiter-array behavior described in Method 1, and the Microsoft 365 / Excel 2024 version scoping.
 - [Split a column of text (Power Query)](https://support.microsoft.com/en-us/office/split-a-column-of-text-power-query-5282d425-6dd0-46ca-95bf-8e0da9539662) — Microsoft Support. Backs the Split Column by Delimiter steps in Method 2, including the Rows-vs-Columns choice.
-- The specific finding that `TEXTSPLIT` returns `#NAME?` in Excel 2021 (rather than simply being described as "unsupported") was independently reproduced by this project in real Excel 2021 across all tested delimiter/blank/multiple-delimiter cases, recorded in the Pilot A/B LIVE TEST section of the project decision log — not solely from the official page above. The claim that Power Query's split-into-rows step has no single "ignore empty" toggle (requiring a separate filter step) is based on the documented steps of the feature rather than a project reproduction; it has not been independently re-verified in Excel this round, consistent with this round's "no new research" instruction.
+- The specific finding that `TEXTSPLIT` returns `#NAME?` in Excel 2021 (rather than simply being described as "unsupported") was independently reproduced by this project in real Excel 2021 across all tested delimiter/blank/multiple-delimiter cases, recorded in the Pilot A/B LIVE TEST section of the project decision log — not solely from the official page above. Power Query's blank-row and multi-delimiter behavior for the Split Column by Delimiter step has **not** been independently reproduced by this project; the article states this explicitly rather than asserting a specific mechanism, per independent QA feedback (revised 2026-09-23).
