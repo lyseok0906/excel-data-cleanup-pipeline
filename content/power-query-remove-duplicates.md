@@ -41,14 +41,16 @@ Read this as: "group all rows by `CustomerID`; within each group, sort by `SortC
 `Table.Group` with this aggregation produces a table with one column per grouping key plus a `Chosen` column holding a **record** (the whole winning row, packaged as one value) — not yet a normal flat table. Every case below needs one more step to turn that back into real columns:
 
 ```
-KeyColumns = {"CustomerID"},
-FieldsToExpand = List.Difference(Table.ColumnNames(Source), KeyColumns),
-Table.ExpandRecordColumn(GroupedResult, "Chosen", FieldsToExpand)
+Table.ExpandRecordColumn(
+    GroupedResult,
+    "Chosen",
+    List.Difference(Table.ColumnNames(Source), {"CustomerID"})
+)
 ```
 
 `GroupedResult` already has a `CustomerID` column (the grouping key), and the `Chosen` record also contains a `CustomerID` field (it's the whole original row). Expanding all of `Chosen`'s fields — including `CustomerID` again — would try to create a second `CustomerID` column and fail. `List.Difference` removes the key column(s) from the list of fields to expand, so only the non-key fields come out of `Chosen`, and the existing `CustomerID` column from the grouping step is kept as-is.
 
-Each case in this guide produces a grouped-and-sorted table exactly like `GroupedResult` above; add this expand step as the final step in every case to get the actual result table. For Case 3, which groups on a composite key, set `KeyColumns = {"CustomerID", "OrderDate"}` instead.
+Each case in this guide produces a grouped-and-sorted table exactly like `GroupedResult` above; add this expand step as the final step in every case to get the actual result table. For Case 3, which groups on a composite key, replace the last argument with `List.Difference(Table.ColumnNames(Source), {"CustomerID", "OrderDate"})` instead.
 
 ## Case 1: Basic Duplicate Key
 
