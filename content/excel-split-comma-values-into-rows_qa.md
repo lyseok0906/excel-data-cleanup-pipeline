@@ -95,9 +95,9 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 
 ## 8. Final Verdict
 
-**DRAFT — REVISION APPLIED (2026-09-23) PER INDEPENDENT QA — TECHNICALLY SOUND PER EXISTING RECORDS AND OFFICIAL DOCS, NOT YET EVIDENCE-COMPLETE.**
+**DRAFT — CONTENT APPROVED (per ChatGPT independent QA, 2026-09-23) — PENDING FIXTURE / ENGLISH-UI SCREENSHOTS.**
 
-Rationale: the article's remaining technical claims trace directly to an official Microsoft page or an already-verified project reproduction (the Excel 2021 `#NAME?` finding). The two Power Query claims that were not backed by either (blank-row handling and multiple-delimiter support) are now stated as explicitly unverified rather than presented as fact — see §9. No new research or Excel reproduction was performed this round. Same as Pilot A, this article is **not** yet CONTENT READY — its High-risk Integrated Guide grade requires fixture-backed screenshots, and none exist yet (§4). Awaiting re-confirmation before this Pilot is considered content-approved.
+Rationale: the article's remaining technical claims trace directly to an official Microsoft page or an already-verified project reproduction (the Excel 2021 `#NAME?` finding). The two Power Query claims that were not backed by either (blank-row handling and multiple-delimiter support) are now stated as explicitly unverified rather than presented as fact — see §9. No new research or Excel reproduction was performed this round. Confirmed by independent ChatGPT QA (2026-09-23): the TEXTSPLIT content held up and the softened Power Query language was accepted as-is, no further changes required. Same as Pilot A, this article is **not** yet CONTENT READY only because its High-risk Integrated Guide grade requires fixture-backed screenshots, and none exist yet (§4).
 
 ## 9. Revision Round — ChatGPT Independent QA (2026-09-23)
 

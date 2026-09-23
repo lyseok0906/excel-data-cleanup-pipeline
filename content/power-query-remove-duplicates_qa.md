@@ -102,9 +102,29 @@ Planned fixture (for a future round, once the user confirms): one workbook with 
 
 ## 8. Final Verdict
 
-**DRAFT — REVISION APPLIED (2026-09-23) PER INDEPENDENT QA — TECHNICALLY SOUND PER EXISTING RECORDS, NOT YET EVIDENCE-COMPLETE.**
+**DRAFT — CONTENT APPROVED (per ChatGPT independent QA, 2026-09-23, round 2) — PENDING FIXTURE / ENGLISH-UI SCREENSHOTS.**
 
-Rationale: every technical claim in the article is either a direct restatement of something the decision log already records as independently verified (Cases 5 and 7, the built-in Remove Duplicates behavior, the `Table.Distinct` folding caveat), or a standard, officially-documented Power Query mechanism presented without a fabricated reproduction claim (Cases 1–4, 6, 8, disclosed in Finding D). No new research or Excel reproduction was performed this round, per instruction. The article is **not** yet CONTENT READY, because — unlike Pilot F/G — this High-risk Integrated Guide grade calls for fixture-backed screenshots across its 8 cases, and none exist yet (§4). See §9 for the round of fixes just applied per independent ChatGPT QA; awaiting re-confirmation before this Pilot is considered content-approved.
+Rationale: every technical claim in the article is either a direct restatement of something the decision log already records as independently verified (Cases 5 and 7, the built-in Remove Duplicates behavior, the `Table.Distinct` folding caveat), or a standard, officially-documented Power Query mechanism presented without a fabricated reproduction claim (Cases 1–4, 6, 8, disclosed in Finding D). No new research or Excel reproduction was performed this round, per instruction. Round 1 of independent QA (§9) fixed the missing expand step, the forward-reference ordering issue, and the incomplete blank-key guidance; round 2 (§10) fixed a correctness bug in the round-1 expand step itself. The article is content-approved; it is **not** yet CONTENT READY only because — unlike Pilot F/G — this High-risk Integrated Guide grade calls for fixture-backed screenshots across its 8 cases, and none exist yet (§4).
+
+## 10. Revision Round 2 — ChatGPT Independent QA (2026-09-23)
+
+**Verdict received:** 수정 1건 필요 (one fix required).
+
+**Issue raised:** the round-1 expand step, `Table.ExpandRecordColumn(GroupedResult, "Chosen", Table.ColumnNames(Source))`, expands every field of the `Chosen` record — including `CustomerID`, which is already present as its own column from the `Table.Group` grouping step. Expanding it again would attempt to create a duplicate `CustomerID` column and error.
+
+**Change made:** replaced the expand step with a version that excludes the grouping key column(s) before expanding:
+
+```
+KeyColumns = {"CustomerID"},
+FieldsToExpand = List.Difference(Table.ColumnNames(Source), KeyColumns),
+Table.ExpandRecordColumn(GroupedResult, "Chosen", FieldsToExpand)
+```
+
+Added an explanatory paragraph covering why the naive expand fails (duplicate column name) and how `List.Difference` avoids it, plus a note that Case 3's composite key means `KeyColumns` there should be `{"CustomerID", "OrderDate"}` instead of the single-column default.
+
+**Not changed:** everything else in the article — the round-1 fixes (Case 5/6 reordering, Case 4's null/"" guidance) and all other case-specific M code were not disputed by this round of QA.
+
+**Post-fix verdict:** Pilot A — DRAFT, content approved, fixture/English-UI screenshots pending (same status as Pilot B/C/D/E).
 
 ## 9. Revision Round — ChatGPT Independent QA (2026-09-23)
 
