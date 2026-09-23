@@ -93,9 +93,9 @@ No fixture exists in this repo for this topic under `fixtures/`. Planned fixture
 
 ## 8. Final Verdict
 
-**DRAFT — TECHNICALLY SOUND, STRONGLY EVIDENCED, NOT YET SCREENSHOT-COMPLETE. Revision-required verdict from independent ChatGPT QA has been addressed (§9); awaiting confirmation.**
+**DRAFT — CONTENT APPROVED, PENDING FIXTURE / ENGLISH-UI SCREENSHOTS.** (Per ChatGPT's second-round QA: "Pilot C: DRAFT — 내용 승인 가능, fixture·영문 UI 스크린샷 대기.")
 
-Rationale: this article's central technical claim (TRIM doesn't remove non-breaking spaces) is stated directly in Microsoft's own official TRIM documentation. The `CHAR(160)` behavior is a project-verified, root-cause-diagnosed reproduction on one configuration, now stated without overgeneralizing to "other non-Western locales" or claiming it's not a one-off. No new research or Excel reproduction was performed this round. The article is **not** yet CONTENT READY, both because no fixture or screenshots exist yet (§4), and because the revision made in response to ChatGPT's QA has not yet been re-confirmed by that same reviewer. Next step: resubmit for confirmation; do not proceed to Pilot E, WordPress Draft upload, or Publish until confirmed.
+Rationale: this article's central technical claim (TRIM doesn't remove non-breaking spaces) is stated directly in Microsoft's own official TRIM documentation. The `CHAR(160)` behavior is a project-verified, root-cause-diagnosed reproduction on one configuration, stated without overgeneralizing to "other non-Western locales" and without asserting an unverified causal mechanism (round 2 removed the "plausible mechanism" speculation per ChatGPT's second-round QA — see §10). No new research or Excel reproduction was performed this round. Content is approved; the sole remaining blocker before this can move past Draft is fixture creation and English-UI screenshot capture (§4).
 
 ## 9. Revision Round — ChatGPT Independent QA (2026-09-22)
 
@@ -113,3 +113,14 @@ Rationale: this article's central technical claim (TRIM doesn't remove non-break
 7. Updated the one-line summary and Sources section to match the revised, scope-limited framing throughout.
 
 **Not changed:** the underlying technical facts (TRIM doesn't remove NBSP; CHAR(160) returned 32 instead of 160 on the tested machine; UNICHAR(160) returned 160 correctly) — these were not disputed by the QA and remain as originally recorded from the decision log.
+
+
+## 10. Revision Round 2 — ChatGPT Independent QA (2026-09-23)
+
+**Verdict received:** 방향은 맞지만 아직 최종 PASS는 아님 (direction correct, not yet final PASS) — one remaining issue.
+
+**Issue raised:** the sentence "`UNICHAR` addresses a Unicode code point directly, rather than going through the legacy ANSI character-code mapping that `CHAR` uses — which is a plausible mechanism for why the two functions could diverge on a non-English Windows installation" was an unverified causal claim (a "plausible mechanism" is speculation, not a verified fact) and should be removed in favor of stating only what was actually measured.
+
+**Change made:** replaced that sentence with: "On the tested machine, `UNICODE(UNICHAR(160))` returned 160 while `UNICODE(CHAR(160))` returned 32. That is why this article uses `UNICHAR(160)` for the NBSP replacement." — this states only the measured result and the practical conclusion drawn from it, with no claim about *why* the two functions diverge.
+
+**Result:** ChatGPT's round-2 verdict for this article: **"Pilot C: DRAFT — 내용 승인 가능, fixture·영문 UI 스크린샷 대기"** (content approved, pending fixture/English-UI screenshots). This round's change has not yet been separately re-confirmed by ChatGPT (it was specified as the exact required fix), but per the reviewer's own stated condition, applying it moves this article past the "revision required" state to "content approved, screenshots pending."

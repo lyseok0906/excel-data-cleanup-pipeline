@@ -93,9 +93,9 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 
 ## 8. Final Verdict
 
-**DRAFT — TECHNICALLY SOUND PER EXISTING RECORDS AND OFFICIAL DOCS, NOT YET EVIDENCE-COMPLETE. Revision-required verdict from independent ChatGPT QA has been addressed (§9); awaiting confirmation.**
+**DRAFT — CONTENT APPROVED, PENDING FIXTURE / ENGLISH-UI SCREENSHOTS.** (Per ChatGPT's second-round QA: "Pilot D: DRAFT — 내용 승인 가능, fixture·영문 UI 스크린샷 대기.")
 
-Rationale: the article's two central claims (the exact null-vs-"" output difference in `Text.Combine`) are direct restatements of a project-verified single-execution reproduction already recorded in the decision log (Pilot D, PASS with no re-verification needed per the lightweight model). The general `Text.Combine` syntax is backed by an official Microsoft Learn page. This round's revision replaced a non-runnable diagnostic snippet with a standalone `Table.AddColumn` example, softened the Go To Special analogy to avoid claiming mechanism equivalence, and removed a weak cross-name length comparison. No new research or Power Query reproduction was performed this round. The article is **not** yet CONTENT READY, both because no fixture or screenshots exist yet (§4), and because this revision has not yet been re-confirmed by ChatGPT. Next step: resubmit for confirmation; do not proceed to Pilot E, WordPress Draft upload, or Publish until confirmed.
+Rationale: the article's two central claims (the exact null-vs-"" output difference in `Text.Combine`) are direct restatements of a project-verified single-execution reproduction already recorded in the decision log (Pilot D, PASS with no re-verification needed per the lightweight model). The general `Text.Combine` syntax is backed by an official Microsoft Learn page. Round 2 fixed a preview-description contradiction in the opening paragraph, corrected the `Table.AddColumn` example to be a properly chained, independently runnable Advanced Editor sequence (with a separate Custom Column UI instruction), and confirmed code fences are clean 3-backtick pairs throughout (see §10). No new research or Power Query reproduction was performed this round. Content is approved; the sole remaining blocker before this can move past Draft is fixture creation and English-UI screenshot capture (§4).
 
 ## 9. Revision Round — ChatGPT Independent QA (2026-09-22)
 
@@ -116,5 +116,24 @@ Rationale: the article's two central claims (the exact null-vs-"" output differe
 2. Rewrote the Go To Special > Blanks paragraph to explicitly state that Excel's blank cell and Power Query's `null` "are not literally the same data type" and that Go To Special's selection logic "isn't run through the same code as `Text.Combine`" — reframed as a useful analogy/reminder rather than a claim of shared mechanism.
 3. Removed the `Text.Length` numeric comparison between different names entirely. Added a note in §4 (Fixture Requirements) that a future fixture should use matching First/Last values across the null and "" rows, so any future length comparison is a fair like-for-like test.
 4. Updated the one-line summary to reflect the corrected diagnostic approach (`Table.AddColumn` instead of bare relational checks) and removed the length-comparison framing.
+
+**Not changed:** the underlying technical facts (Text.Combine skips null but not "", producing the documented one-space vs. two-space difference; the visual italic/non-italic distinction in the editor) — these were not disputed by the QA and remain as originally recorded from the decision log.
+
+
+## 10. Revision Round 2 — ChatGPT Independent QA (2026-09-23)
+
+**Verdict received:** 방향은 맞지만 아직 최종 PASS는 아님 (direction correct, not yet final PASS) — three remaining issues.
+
+**Issues raised:**
+1. The opening paragraph said `null` and `""` "look identical in the data preview," which contradicts the later statement that `null` displays in italics and `""` displays as a plain blank — an internal contradiction.
+2. The `Table.AddColumn` example was written as two independent statements, not a properly chained Advanced Editor step sequence, and cannot be pasted as-is into the Custom Column dialog (which only accepts the expression after `each`, not the full `Table.AddColumn(...)` wrapper).
+3. The reviewer's copy of the Markdown showed 4-backtick code fences in places (e.g., an `excel` fence opened with 3 backticks but apparently closed with 4) and asked for confirmation that the actual repo file uses clean 3-backtick fences throughout.
+
+**Changes made:**
+1. Rewrote the opening paragraph to: "A column that appears empty at a glance in Power Query can hold either `null` or `""` (an empty string). In this project's observed preview, `null` appeared in italics while an empty string appeared as a plain blank cell." This removes the "look identical" claim and states the actual observed visual difference immediately, consistent with the later "How to Tell Them Apart" section.
+2. Replaced the `Table.AddColumn` example with a properly chained sequence (`IsNull = Table.AddColumn(Source, ...)`, `IsEmptyString = Table.AddColumn(IsNull, ...)` — the second step references the first by name, as a real Advanced Editor `let` block would), and added a separate paragraph clarifying that the Custom Column dialog only takes the expression after `each` (`[Middle] = null` / `[Middle] = ""`), not the full `Table.AddColumn(...)` wrapper.
+3. Verified directly against the repo file (`grep -n` for triple-backtick fence lines) that all three code blocks in the article use clean, correctly paired 3-backtick fences with no stray 4-backtick sequences. The 4-backtick appearance in the material shared for review was an artifact of how that copy nested a ```markdown wrapper fence around code that itself contained ```excel fences when pasted into chat — not a defect in the actual repo file. No change was needed in the repo file itself for this point; confirmed clean.
+
+**Result:** ChatGPT's round-2 verdict for this article: **"Pilot D: DRAFT — 내용 승인 가능, fixture·영문 UI 스크린샷 대기"** (content approved, pending fixture/English-UI screenshots), conditional on applying fixes 1 and 2 above (both applied) and confirming fix 3 (confirmed — no repo file change needed).
 
 **Not changed:** the underlying technical facts (Text.Combine skips null but not "", producing the documented one-space vs. two-space difference; the visual italic/non-italic distinction in the editor) — these were not disputed by the QA and remain as originally recorded from the decision log.

@@ -12,7 +12,7 @@ status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — fixt
 
 # Power Query: Why null and "" (Empty String) Are Not the Same Thing
 
-A column that looks empty in Power Query can actually hold one of two different values: `null` (no value at all) or `""` (an empty string — a real, zero-length piece of text). They look identical in the data preview, but functions like `Text.Combine` treat them differently, and mixing them up silently produces wrong results — not an error.
+A column that appears empty at a glance in Power Query can hold either `null` or `""` (an empty string). In this project's observed preview, `null` appeared in italics while an empty string appeared as a plain blank cell. Functions like `Text.Combine` treat the two differently, and mixing them up silently produces wrong results — not an error.
 
 **Applies to:** Power Query / Get & Transform in all current Excel versions (Excel for Microsoft 365, Excel 2024, Excel 2021, Excel 2019, Excel 2016) and Power BI, since the M language and its functions behave the same way across these hosts.
 
@@ -41,14 +41,16 @@ It's worth noting that Excel's own **Go To Special > Blanks** command draws a re
 
 In the Power Query editor, `null` values are displayed in italics; empty strings display as a blank cell without italics. This is a visual cue you can check directly in the data preview — it's easy to miss if you're scanning quickly, but it's there.
 
-To check programmatically instead of relying on the visual difference, add flag columns with `Table.AddColumn`:
+To check programmatically instead of relying on the visual difference, add flag columns with `Table.AddColumn`. As a full Advanced Editor step sequence, chained so each step references the previous one:
 
 ```
-Table.AddColumn(Source, "IsNull", each [Middle] = null, type logical)
-Table.AddColumn(Source, "IsEmptyString", each [Middle] = "", type logical)
+IsNull = Table.AddColumn(Source, "IsNull", each [Middle] = null, type logical),
+IsEmptyString = Table.AddColumn(IsNull, "IsEmptyString", each [Middle] = "", type logical)
 ```
 
-Each of these is a runnable step you can add in the Power Query editor (Add Column > Custom Column, or paste directly into the applied steps in the Advanced Editor) — it adds a new column that's `TRUE` only for a genuine `null`, and a separate column that's `TRUE` only for an empty string, so you can see row by row which rows actually have which value.
+This adds a column that's `TRUE` only for a genuine `null`, and a separate column that's `TRUE` only for an empty string, so you can see row by row which rows actually have which value.
+
+If you're building this through the UI instead of the Advanced Editor, use **Add Column > Custom Column** twice — once per flag. In the Custom Column dialog, you don't paste the `Table.AddColumn(...)` wrapper; you only enter the expression after `each`, i.e. `[Middle] = null` for the first column and `[Middle] = ""` for the second. Power Query generates the surrounding `Table.AddColumn` step for you.
 
 ## How to Fix It
 
