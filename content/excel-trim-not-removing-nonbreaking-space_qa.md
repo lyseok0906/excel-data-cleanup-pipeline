@@ -154,3 +154,21 @@ User captured all 5 required screenshots directly in Excel on the target machine
 **Technical QA item 3 (reproduction evidence) status: now PASS.** All 5 screenshots match the article's claims exactly, including the locale-specific `CHAR(160)` → 32 result, which is now confirmed on two separate occasions (original decision-log reproduction, and this fixture). No blockers remain except the standing Human Approval / WordPress upload step.
 
 **Final Verdict updated:** DRAFT — CONTENT APPROVED, FIXTURE + SCREENSHOTS COMPLETE. Ready for WordPress Draft creation, pending user go-ahead (same protocol as Pilot G).
+
+## 13. WordPress Draft Created (2026-09-28)
+
+Created via REST API through the already-authenticated Claude Browser session (cookie + nonce, no credentials entered), same method as Pilot G:
+
+- **Post ID 34**, slug `excel-trim-not-removing-nonbreaking-space`, status `draft`.
+- Category: created new category "Text Cleanup" (id 4) via REST — did not exist yet on this site (only "Data Cleanup" and "Uncategorized" existed before).
+- Content: full article converted to Gutenberg blocks matching `content/excel-trim-not-removing-nonbreaking-space.md` exactly, with 5 bolded `[IMAGE N — filename.png]` placeholder paragraphs marking insertion points (each also naming the suggested alt text), placed at the points in the article where each screenshot is most relevant:
+  1. `01-trim-fails-on-nbsp.png` — after "Why TRIM Alone Isn't Enough"
+  2. `05-fix-formula-result.png` — after "The Standard Fix Formula"
+  3. `03-unicode-char160-returns-32.png` — in "A Formula That Can Fail"
+  4. `04-unicode-unichar160-returns-160.png` — immediately after #3
+  5. `02-unicode-mid-returns-160.png` — in "How to Check Whether This Affects You"
+- Excerpt set to the meta description.
+- Rank Math SEO fields set via `wp.data.dispatch('rank-math')` (REST does not expose Rank Math postmeta on this site, same finding as Pilot G): focus keyword `excel trim not removing space`, SEO title matching the article title, meta description matching the excerpt. Saved via `core/editor` `savePost()`, verified persisted after a full page reload.
+- Post status confirmed `draft` before and after the SEO save.
+
+**Remaining steps (same protocol as Pilot G):** user attaches the 5 images directly in the already-open editor (automated upload paths previously ruled out as inefficient/blocked); Cowork then sets alt text on each image (media library + inline `<img>`) using the exact wording from §4/§12; status stays Draft until a separate explicit publish approval.
