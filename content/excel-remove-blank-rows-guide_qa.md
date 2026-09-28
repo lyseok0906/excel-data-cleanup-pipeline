@@ -82,11 +82,13 @@ Fixture file: `fixtures/pilot_FG_fixture_v2.xlsx`, sheet `G_BlankRows` (correcte
 
 ## 7. Publish-Readiness Status
 
-- WordPress upload: **NOT performed** (no draft, no publish) — per explicit user instruction for this step.
+- WordPress upload: **WordPress Draft created** (post ID 25, https://cleansheethq.com/wp-admin/post.php?post=25&action=edit) - per explicit user approval to proceed to this step (see section 10). Public Publish has NOT been performed and remains a separate, not-yet-given approval.
 - Repo storage: article and fixture fix are committed (`79ec080` article; `a81010a` fixture fix); this QA package is new this round.
-- Screenshot evidence: **complete** (§4, §9) — no longer an outstanding item.
-- Outstanding item: **Human Approval itself** — not yet requested to move forward; also not yet given.
-- Minor, non-blocking item: meta description is 163 characters, slightly over Rank Math's typical 155-160 char guidance — worth a small trim at the next edit pass, not required before Human Approval.
+- Screenshot evidence: **complete** (section 4, section 9) - no longer an outstanding item.
+- Image placement in the Draft: the 5 screenshots are NOT yet inserted into the Draft body - the user is attaching them directly in the WordPress block editor at the 5 placeholder markers Cowork left in the post content (see section 10 for exact placement and file names).
+- Rank Math meta description / focus keyword: could not be set via the WordPress REST API (Rank Math does not expose these fields to REST on this site) - the user needs to fill them in manually in the Rank Math sidebar panel of the block editor.
+- Outstanding items before Publish: (1) user inserts the 5 images at the marked placeholders, (2) user fills in Rank Math meta description and focus keyword, (3) user's own Publish approval (separate step, not requested here).
+- Minor, non-blocking item: meta description is 163 characters, slightly over Rank Math's typical 155-160 char guidance - worth a small trim at the next edit pass.
 
 ## 8. Final Verdict
 
@@ -115,3 +117,41 @@ This is the same defect class already recorded in the 2026-09-15 decision log fo
 **Overall result: PASS.** No article or formula changes were needed; the defect and its fix were entirely confined to the fixture file.
 
 **Not yet done (per standing operating principle):** WordPress upload, Draft creation, and Human Approval all remain not performed and have not been requested.
+
+
+## 10. WordPress Draft Created (2026-09-28)
+
+Per the user's explicit selection ("Pilot G Draft upload"), Cowork created a WordPress Draft via the authenticated REST API (cookie + nonce session already logged in to cleansheethq.com/wp-admin in the Claude browser pane - no credentials were entered by Cowork):
+
+- Post ID: 25
+- Status: draft (not published)
+- Edit link: https://cleansheethq.com/wp-admin/post.php?post=25&action=edit
+- Title: "How to Remove Blank Rows in Excel Without Breaking Your Formulas"
+- Slug: excel-remove-blank-rows-guide
+- Category: Data Cleanup (id 3)
+- Excerpt: set to the article's meta description text
+- Body: full article content converted to Gutenberg blocks (headings, lists, code blocks, paragraphs), matching content/excel-remove-blank-rows-guide.md section for section
+
+### Why the 5 screenshots were not uploaded by Cowork
+
+Three automated upload paths were attempted and all hit a real blocker:
+
+1. OS-level desktop file-picker automation - the Claude Desktop app itself could not be resolved as a controllable application for desktop automation on this device, so there was no way to drive a native "Open" file dialog.
+2. Real Chrome extension automation - the user's actual Chrome profile controlled by that extension was not logged in to cleansheethq.com/wp-admin, and Cowork does not enter passwords into login forms under any circumstance.
+3. Base64 chunked transfer through the already-authenticated Claude browser pane - technically worked (confirmed with a live test) but required roughly 6 tool round-trips per image (~30 total for 5 images) due to per-call output size limits, which was judged too slow/inefficient.
+
+Presented with these three options, the user chose to attach the 5 images directly, themselves, in the already-open WordPress block editor tab (the Claude browser pane, already on the Draft's edit screen).
+
+### Exact placement for the user to insert each image
+
+Cowork left a bolded placeholder paragraph at each of the 5 planned locations in the Draft body - search the block editor for text starting with "[IMAGE" to find each spot quickly. Replace each placeholder paragraph with an Image block using the corresponding file:
+
+| # | Placeholder text (search for this) | File to attach (original PNG, on the device) | Suggested alt text |
+|---|---|---|---|
+| 1 | [IMAGE 1 - Go To Special dialog...] | C:\blog\excel-data-cleanup-pipeline\evidence\pilot-g\01-go-to-special-dialog.png | "Excel Go To Special dialog box with the Blanks option selected" |
+| 2 | [IMAGE 2 - Result of Go To Special...] | C:\blog\excel-data-cleanup-pipeline\evidence\pilot-g\02-blanks-selection-result.png | "Excel showing partially filled rows and fully blank rows selected together by Go To Special Blanks" |
+| 3 | [IMAGE 3 - #REF! error...] | C:\blog\excel-data-cleanup-pipeline\evidence\pilot-g\03-entire-row-delete-ref-error.png | "Excel formula showing a #REF! error after the row it referenced was deleted" |
+| 4 | [IMAGE 4 - COUNTA helper column...] | C:\blog\excel-data-cleanup-pipeline\evidence\pilot-g\04-counta-helper-column.png | "Excel COUNTA helper column distinguishing fully blank rows (0) from partially filled rows (1 or more)" |
+| 5 | [IMAGE 5 - Final filtered result...] | C:\blog\excel-data-cleanup-pipeline\evidence\pilot-g\05-filtered-final-result.png | "Excel spreadsheet after safely removing only fully blank rows, keeping partially filled records intact" |
+
+After inserting all 5 images and removing the placeholder paragraphs, the user should also fill in the Rank Math meta description and focus keyword (not settable via REST on this site - see section 7), then decide separately whether/when to Publish. WordPress auto-saves Draft edits, so no extra "Update" click is strictly required, but clicking Save Draft after inserting the images is recommended to be safe.
