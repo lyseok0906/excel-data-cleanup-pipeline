@@ -85,9 +85,13 @@ Fixture file: `fixtures/pilot_FG_fixture_v2.xlsx`, sheet `G_BlankRows` (correcte
 - WordPress upload: **WordPress Draft created** (post ID 25, https://cleansheethq.com/wp-admin/post.php?post=25&action=edit) - per explicit user approval to proceed to this step (see section 10). Public Publish has NOT been performed and remains a separate, not-yet-given approval.
 - Repo storage: article and fixture fix are committed (`79ec080` article; `a81010a` fixture fix); this QA package is new this round.
 - Screenshot evidence: **complete** (section 4, section 9) - no longer an outstanding item.
-- Image placement in the Draft: the 5 screenshots are NOT yet inserted into the Draft body - the user is attaching them directly in the WordPress block editor at the 5 placeholder markers Cowork left in the post content (see section 10 for exact placement and file names).
-- Rank Math meta description / focus keyword: could not be set via the WordPress REST API (Rank Math does not expose these fields to REST on this site) - the user needs to fill them in manually in the Rank Math sidebar panel of the block editor.
-- Outstanding items before Publish: (1) user inserts the 5 images at the marked placeholders, (2) user fills in Rank Math meta description and focus keyword, (3) user's own Publish approval (separate step, not requested here).
+- Image placement in the Draft: **complete** - the user attached all 5 screenshots at the placeholder markers, confirmed via REST (`wp/v2/posts/25?context=edit`): 5 `<img>` tags present, 0 remaining `[IMAGE N]` placeholders. Cowork additionally set alt text on all 5 images (both the media library `alt_text` field and the `alt=""` attribute inside the post content) using the drafts from section 4/section 10.
+- Rank Math meta description / focus keyword / SEO title: NOT settable via the WordPress REST API (not exposed on this site), but Cowork set them directly through the Rank Math Gutenberg data store (`wp.data.dispatch('rank-math')`) in the browser, then triggered `core/editor` savePost. Verified persisted after a full page reload:
+  - SEO title: "How to Remove Blank Rows in Excel Without Breaking Formulas"
+  - Meta description: "Learn why deleting blank cells can remove partially filled rows and break formulas, then use COUNTA to safely remove only truly blank rows."
+  - Focus keyword: "remove blank rows in Excel"
+  - Post status confirmed still `draft` after this save (not published).
+- Outstanding items before Publish: only the user's own Publish approval (separate step, not requested here). Image placement, alt text, and Rank Math SEO fields are all complete.
 - Minor, non-blocking item: meta description is 163 characters, slightly over Rank Math's typical 155-160 char guidance - worth a small trim at the next edit pass.
 
 ## 8. Final Verdict
@@ -155,3 +159,19 @@ Cowork left a bolded placeholder paragraph at each of the 5 planned locations in
 | 5 | [IMAGE 5 - Final filtered result...] | C:\blog\excel-data-cleanup-pipeline\evidence\pilot-g\05-filtered-final-result.png | "Excel spreadsheet after safely removing only fully blank rows, keeping partially filled records intact" |
 
 After inserting all 5 images and removing the placeholder paragraphs, the user should also fill in the Rank Math meta description and focus keyword (not settable via REST on this site - see section 7), then decide separately whether/when to Publish. WordPress auto-saves Draft edits, so no extra "Update" click is strictly required, but clicking Save Draft after inserting the images is recommended to be safe.
+
+
+## 11. Images Attached, Alt Text, and Rank Math SEO Fields Completed (2026-09-28, continued)
+
+The user attached all 5 screenshots directly in the WordPress block editor (as agreed in section 10), replacing each `[IMAGE N]` placeholder with an Image block. Cowork then verified and completed the remaining metadata:
+
+- **Image insertion verified via REST** (`wp/v2/posts/25?context=edit`): exactly 5 `<img>` tags in the post content, matching the 5 expected filenames in order, 0 remaining placeholder text.
+- **Alt text**: set on all 5 images, both on the media library attachment (`wp/v2/media/{id}`, ids 27-31) and inline in the post content's `<img alt="...">` attributes (the block editor does not automatically propagate an attachment's alt text into an already-inserted image block), using the exact text drafted in section 4/section 10.
+- **Rank Math SEO fields**: the REST API does not expose Rank Math's postmeta on this site (confirmed empty in section 7's original REST attempt). Cowork instead used Rank Math's own Gutenberg data store directly in the browser (`wp.data.dispatch('rank-math').updateTitle(...)`, `.updateDescription(...)`, `.updateKeywords(...)`), then called `wp.data.dispatch('core/editor').savePost()`. Reloaded the edit screen from scratch afterward and re-read the store, confirming all three values persisted to the database:
+  - SEO title: "How to Remove Blank Rows in Excel Without Breaking Formulas"
+  - Meta description: "Learn why deleting blank cells can remove partially filled rows and break formulas, then use COUNTA to safely remove only truly blank rows."
+  - Focus keyword: "remove blank rows in Excel"
+- **Post status double-checked after every save in this round**: remained `draft` throughout. No Publish action was taken.
+
+**Status: Draft is now fully complete** - content, fixture, screenshots, alt text, and on-page SEO fields are all in place. The only remaining step is the user's own decision on when (or whether) to Publish.
+
