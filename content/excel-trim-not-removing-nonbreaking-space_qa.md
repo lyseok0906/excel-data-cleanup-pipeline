@@ -138,3 +138,19 @@ Verified via `soffice --headless --convert-to xlsx` recalculation (Linux/LibreOf
 A `Capture_Notes` sheet in the same workbook gives the exact cell references, expected formula-bar contents, and draft alt text for each of the 5 required screenshots (same content as the §4 table above), so the capture step doesn't require re-deriving cell coordinates.
 
 **Remaining blocker:** English-UI screenshot capture in Excel, on the machine where the original `CHAR(160)` behavior was found (Korean-language Windows regional settings), per the `Capture_Notes` sheet.
+
+## 12. Screenshot Capture Confirmed (2026-09-28)
+
+User captured all 5 required screenshots directly in Excel on the target machine (Korean-language Windows regional settings, English display language), using `fixtures/excel-trim-not-removing-nonbreaking-space_fixture.xlsx`. Saved to `evidence/excel-trim-not-removing-nonbreaking-space/`:
+
+| # | File | Cell / formula shown | Measured result |
+|---|---|---|---|
+| 1 | `01-trim-fails-on-nbsp.png` | D2, `=TRIM(B2)` | Text unchanged (16 chars in, 16 chars out) — TRIM does not remove the non-breaking space |
+| 2 | `02-unicode-mid-returns-160.png` | F2, `=UNICODE(MID(B2,1,1))` | 160 — confirms the leading character is a true non-breaking space |
+| 3 | `03-unicode-char160-returns-32.png` | G2, `=UNICODE(CHAR(160))` | **32** — confirms the `CHAR(160)` bug reproduces on this machine too (matches the original decision-log finding on Korean-language Windows; this is a second, independent confirmation, not an assumption) |
+| 4 | `04-unicode-unichar160-returns-160.png` | H2, `=UNICODE(UNICHAR(160))` | 160 — `UNICHAR(160)` returns the correct code point where `CHAR(160)` does not |
+| 5 | `05-fix-formula-result.png` | K2:L2, `=TRIM(SUBSTITUTE(CLEAN(B2),UNICHAR(160)," "))` | "Wireless Mouse", length 14 — matches the expected clean text exactly |
+
+**Technical QA item 3 (reproduction evidence) status: now PASS.** All 5 screenshots match the article's claims exactly, including the locale-specific `CHAR(160)` → 32 result, which is now confirmed on two separate occasions (original decision-log reproduction, and this fixture). No blockers remain except the standing Human Approval / WordPress upload step.
+
+**Final Verdict updated:** DRAFT — CONTENT APPROVED, FIXTURE + SCREENSHOTS COMPLETE. Ready for WordPress Draft creation, pending user go-ahead (same protocol as Pilot G).
