@@ -7,7 +7,7 @@ focus_keyword: "excel trim not removing space"
 internal_link_candidates:
   - "excel-remove-blank-rows-guide" # Pilot G, production draft exists — not yet published, do not link until it exists
   - "power-query-remove-duplicates" # Pilot A, production draft exists — not yet published, do not link until it exists
-status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — fixture + English-UI screenshots complete 2026-09-28 — revised 2026-09-22 per independent QA"
+status: "PUBLISHED — LIVE at https://cleansheethq.com/excel-trim-not-removing-nonbreaking-space/ (2026-09-28) — revised 2026-09-22 per independent QA"
 ---
 
 # Why TRIM Isn't Removing Non-Breaking Spaces in Excel

@@ -172,3 +172,15 @@ Created via REST API through the already-authenticated Claude Browser session (c
 - Post status confirmed `draft` before and after the SEO save.
 
 **Remaining steps (same protocol as Pilot G):** user attaches the 5 images directly in the already-open editor (automated upload paths previously ruled out as inefficient/blocked); Cowork then sets alt text on each image (media library + inline `<img>`) using the exact wording from §4/§12; status stays Draft until a separate explicit publish approval.
+
+## 14. Images Attached, Alt Text Set, and Published (2026-09-28, continued)
+
+User attached the 5 screenshots directly in the editor. During that step, the editor's "Publish" button was also clicked (confirmed by the user as intentional, not accidental) — the post moved from `draft` to `publish` at that point, ahead of the usual separate-approval-phrase protocol used for Pilot G. User explicitly confirmed this was intended when asked.
+
+- Verified via REST (`context=edit`): all 5 images present (media IDs 36–40), 0 remaining `[IMAGE N]` placeholders.
+- Alt text set on all 5 media library attachments via REST (`wp/v2/media/{id}`), using the exact wording from §4/§12.
+- Alt text also injected into the inline `<img alt="">` attributes in post content (5/5 replacements), since media-library alt text does not propagate into already-inserted blocks — same method as Pilot G.
+- Rank Math SEO fields (focus keyword, SEO title, meta description) were already set via the `rank-math` data store in §13, prior to publish.
+- **Final state: status `publish`, live at https://cleansheethq.com/excel-trim-not-removing-nonbreaking-space/** — content, images, alt text, and SEO metadata all complete.
+
+**Final Verdict updated:** PUBLISHED — LIVE at https://cleansheethq.com/excel-trim-not-removing-nonbreaking-space/ (2026-09-28). This is Blog B's second live article (after Pilot G).
