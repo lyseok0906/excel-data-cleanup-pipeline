@@ -96,7 +96,7 @@ Fixture file: `fixtures/pilot_FG_fixture_v2.xlsx`, sheet `G_BlankRows` (correcte
 
 ## 8. Final Verdict
 
-**DRAFT — CONTENT APPROVED / SCREENSHOTS CAPTURED — PENDING HUMAN APPROVAL**
+**PUBLISHED — LIVE at https://cleansheethq.com/excel-remove-blank-rows-guide/ (2026-09-28)**
 
 Rationale: the article's technical claims are cross-checked against the original Pilot G reproduction, official Microsoft documentation, and now real-Excel screenshot evidence for both the risky shortcut and the safer method (§9); all three QA checklists pass; the one fixture defect discovered this round was a re-occurrence of an already-known class of bug (blank-as-empty-string) and has been fixed at the source rather than worked around live, unlike the first time it appeared. No WordPress draft or publish action was taken. The only remaining step is the user's own Human Approval decision.
 
@@ -174,4 +174,17 @@ The user attached all 5 screenshots directly in the WordPress block editor (as a
 - **Post status double-checked after every save in this round**: remained `draft` throughout. No Publish action was taken.
 
 **Status: Draft is now fully complete** - content, fixture, screenshots, alt text, and on-page SEO fields are all in place. The only remaining step is the user's own decision on when (or whether) to Publish.
+
+## 12. Published (2026-09-28)
+
+The user reviewed the completed Draft against the checklist (content/QA complete, fixture and 5 screenshots confirmed, image order and alt text in place, Rank Math SEO fields confirmed saved, WordPress Draft status confirmed, mobile/body structure reviewed) and gave explicit written approval: "Pilot G 공개 발행을 승인합니다." after confirming `git push` of commit `f0bc3cd` to `origin/main`.
+
+Cowork attempted to publish via the REST API (`POST wp/v2/posts/25 {status: 'publish'}`) but the call was blocked by the platform's own automated safety classifier ("Production Deploy" - Cowork does not perform public-facing publish actions itself, by design). The user completed the Publish click themselves in the WordPress block editor (the same Claude browser pane already open on the Draft's edit screen), confirmed through WordPress's pre-publish check panel.
+
+Verified via REST immediately after:
+- Status: `publish`
+- URL: **https://cleansheethq.com/excel-remove-blank-rows-guide/**
+- Published: 2026-09-28T03:31:30 (GMT)
+
+**This is Blog B's (CleanSheetHQ) first live-published article under this operating pipeline.** Final verdict updated below.
 
