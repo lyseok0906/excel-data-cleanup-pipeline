@@ -154,3 +154,9 @@ User attached the 4 screenshots directly in the editor (post ID 44). One image (
 - Rank Math SEO fields were already set via the `rank-math` data store in §12, prior to this step.
 - Post status confirmed `draft` throughout — the user clicked "Publish" once during the image-attachment step but did not complete the second pre-publish confirmation, so no unintended publish occurred this time (unlike Pilot C).
 - **Current state: status `draft`, all content/images/alt text/SEO complete. Publish approval not yet given — awaiting separate explicit decision.**
+
+## 14. Published (2026-09-29)
+
+User published directly in the editor (Publish button, then the pre-publish confirmation panel's second Publish click) and pushed the local commits to `origin/main` in the same turn. Confirmed via REST: `status: publish`, live at https://cleansheethq.com/excel-unique-values-legacy-fallback/ , published 2026-09-29T08:05:59 (GMT).
+
+**Final Verdict updated:** PUBLISHED — LIVE at https://cleansheethq.com/excel-unique-values-legacy-fallback/ (2026-09-29). This is Blog B's third live article (after Pilot G and Pilot C).
