@@ -7,7 +7,7 @@ focus_keyword: "excel unique values without unique function"
 internal_link_candidates:
   - "power-query-remove-duplicates" # Pilot A, production draft exists — not yet published, do not link until it exists
   - "excel-trim-not-removing-nonbreaking-space" # Pilot C, production draft exists — not yet published, do not link until it exists
-status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — fixture created 2026-09-28, English-UI screenshots not yet captured"
+status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — fixture + English-UI screenshots complete 2026-09-29"
 ---
 
 # Get Unique Values in Excel 2019 and 2016 (No UNIQUE Function)

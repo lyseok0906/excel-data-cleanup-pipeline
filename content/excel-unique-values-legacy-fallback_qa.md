@@ -110,3 +110,20 @@ Verified via `soffice --headless --convert-to xlsx` recalculation (Linux/LibreOf
 A `Capture_Notes` sheet in the workbook gives the exact cell references, expected formula-bar contents, and draft alt text for each of the 4 required screenshots, plus a reminder to re-enter `C2` live with Ctrl+Shift+Enter to confirm the curly-brace CSE display, since a file-stored array-formula flag isn't the same as Excel's live entry behavior.
 
 **Remaining blocker:** English-UI screenshot capture in Excel, per the `Capture_Notes` sheet.
+
+## 11. Screenshot Capture Confirmed (2026-09-29)
+
+User captured all 4 required screenshots in Excel on the target machine (Korean-language Windows regional settings, English display language), using `fixtures/excel-unique-values-legacy-fallback_fixture.xlsx`. Saved to `evidence/excel-unique-values-legacy-fallback/`:
+
+| # | File | Cell / formula shown | Measured result |
+|---|---|---|---|
+| 1 | `01-array-formula-curly-braces.png` | C2, `{=IFERROR(INDEX($A$2:$A$9, MATCH(0, COUNTIF($C$1:C1, $A$2:$A$9), 0)), "")}` | Curly braces present, confirming a valid CSE array formula |
+| 2 | `02-unique-values-first-appearance-order.png` | C2:C6 | Apple, Banana, Cherry, Date, Elderberry — matches expected order exactly |
+| 3 | `03-iferror-blank-not-error.png` | C7:C9 | Blank cells, no `#N/A` — confirms `IFERROR` behavior once every value is extracted |
+| 4 | `04-unique-function-native-excel2021.png` | E2:E6, `=UNIQUE(A2:A9)` | Spilled correctly to Apple, Banana, Cherry, Date, Elderberry, confirming `UNIQUE()` works natively on this Excel version |
+
+**Finding during capture (worth noting for future fixtures):** the first attempt at screenshot 4 showed `=@UNIQUE(A2:A9)` in the formula bar — Excel had inserted the implicit-intersection `@` operator and returned only "Apple" instead of spilling, because the formula was written into the xlsx by openpyxl (a non-Excel tool) rather than typed live in a dynamic-array-aware Excel session. This is a real, documented Excel compatibility behavior (older-style formula entry gets `@` prepended to preserve single-value semantics), not a bug in the article's claim. **Fix:** the user deleted E2 and retyped `=UNIQUE(A2:A9)` directly in Excel, which then spilled correctly with no `@`. The corrected screenshot is what's saved as file 4 above. This is a useful thing to keep in mind for any future fixture involving dynamic-array functions (UNIQUE, SORT, FILTER, etc.) written via openpyxl: the formula may need to be re-typed live in Excel rather than trusted as-authored.
+
+**Technical QA item 3 (reproduction evidence) status: now PASS.** All 4 screenshots match the article's claims exactly.
+
+**Final Verdict updated:** DRAFT — CONTENT APPROVED, FIXTURE + SCREENSHOTS COMPLETE. Ready for WordPress Draft creation, pending user go-ahead (same protocol as Pilot C/G).
