@@ -144,3 +144,13 @@ Created via REST API through the already-authenticated Claude Browser session (c
 - Post status confirmed `draft` before and after the SEO save.
 
 **Remaining steps (same protocol as Pilot C/G):** user attaches the 4 images directly in the already-open editor; Cowork then sets alt text on each image (media library + inline `<img>`) using the exact wording from §5/§11; status stays Draft until a separate explicit publish decision.
+
+## 13. Images Attached and Alt Text Set (2026-09-29)
+
+User attached the 4 screenshots directly in the editor (post ID 44). One image (04-unique-function-native-excel2021.png) was initially left as an empty image block with no file — caught via a REST check (imgCount 3, one `<img alt=""/>` with no src), reported to the user, and the user filled it in; verified again after via REST to confirm all 4 present with real media IDs (47–50) before proceeding.
+
+- Alt text set on all 4 media library attachments via REST (`wp/v2/media/{id}`), using the exact wording from §5/§11.
+- Alt text also injected into the inline `<img alt="">` attributes in post content (4/4 replacements), since media-library alt text does not propagate into already-inserted blocks — same method as Pilot C/G.
+- Rank Math SEO fields were already set via the `rank-math` data store in §12, prior to this step.
+- Post status confirmed `draft` throughout — the user clicked "Publish" once during the image-attachment step but did not complete the second pre-publish confirmation, so no unintended publish occurred this time (unlike Pilot C).
+- **Current state: status `draft`, all content/images/alt text/SEO complete. Publish approval not yet given — awaiting separate explicit decision.**
