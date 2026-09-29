@@ -171,3 +171,31 @@ The explanatory paragraph was kept (why the naive expand would collide on `Custo
 3. Rewrote Case 4 to explicitly name `""` as a separate case from `null` (since `Table.Group` treats them as different group values), added a bullet instructing the reader to decide whether both count as "missing," and gave the two-condition filter `Table.SelectRows(Source, each [CustomerID] <> null and [CustomerID] <> "")` as the version to use when they do.
 
 **Not changed:** the underlying verified facts (the exact `_SortDate`/`RowID` tie-break M code and the query-folding "not applicable" determination for an in-workbook source, both confirmed by this project's LIVE TEST reproduction) — these were not disputed by the QA and remain exactly as extracted from the decision log, just relocated to close the forward-reference gap.
+
+## 12. Fixture Creation (2026-09-29)
+
+**Fixture file:** `fixtures/power-query-remove-duplicates_fixture.xlsx`
+
+Unlike Pilot C/E (cell-formula fixtures), Pilot A's queries are Power Query M code, which openpyxl cannot author directly (Power Query definitions live outside the cell-formula model). The fixture therefore contains only the **raw source data** for each of the 6 distinct cases (Case 7 reuses Case 1's query; Case 8 reuses Case 6's query — no separate source needed for either), each as a named Excel Table so the M code can reference it via `Excel.CurrentWorkbook(){[Name="..."]}[Content]`:
+
+| Sheet | Table name | Columns | Rows |
+|---|---|---|---|
+| Case1_Source | Case1Source | CustomerID, Amount | C1/100, C1/150, C2/200 |
+| Case2_Source | Case2Source | CustomerID, UpdatedDate, Amount | C1/2024-01-10/100, C1/2024-01-15/120, C2/2024-02-01/200 |
+| Case3_Source | Case3Source | CustomerID, OrderDate, Amount | C1/2024-01-10/100, C1/2024-02-10/150, C2/2024-03-01/200 |
+| Case4_Source | Case4Source | CustomerID, Amount | C1/100, (blank)/999, (=""))/888, C2/200 |
+| Case5_Source | Case5Source | CustomerID, UpdatedDate, RowID, Amount | C1/2024-01-10/1/100, C1/2024-01-15/2/150, C1/2024-01-15/3/160 |
+| Case6_Source | Case6Source | CustomerID, OrderDate, RowID, Amount | C1/(blank)/1/100, C1/2024-02-01/2/150 |
+
+A 7th sheet, `Instructions`, contains: the exact M code to paste into the Power Query Advanced Editor for each of the 6 cases, the expected result for each, step-by-step instructions for Case 7 (query folding check) and Case 8 (refresh determinism check), and the full 8-screenshot capture plan with draft alt text (matching §4's table).
+
+**Defect found and fixed during fixture build — null vs. empty string, again:** the first build attempt wrote Case 4's row 3 `CustomerID` as a plain Python `""`. On reload, openpyxl round-tripped it back as `None`, identical to the true-blank row above it — openpyxl silently collapses an assigned empty string to a blank cell on write, so the two rows were no longer distinguishable, defeating the entire point of Case 4. This is the same null-vs-empty-string trap this project has hit before (Pilot D's Text.Combine finding; Pilot G's `a81010a` fixture fix), this time surfacing in fixture *authoring* rather than in the target formula. **Fix:** row 3's `CustomerID` is now written as the formula `=""` instead of a literal string constant. A formula-evaluated zero-length string is a genuine, distinct TEXT value in Excel's data model (data type `f`, confirmed via openpyxl `cell.data_type` after reload), whereas a literal empty string assigned through openpyxl is not representable at all — it collapses to blank. This also mirrors how a true empty string usually actually reaches a real workbook (a formula, an import, or a linked source), since typing into a cell and clearing it always leaves a true blank, never an empty string. The `Instructions` sheet note for Case 4 was updated to explain this to the user, and to flag that the cell will show blank until Excel recalculates it (which happens automatically on open, so no manual action is needed).
+
+**Verification:** re-opened the saved fixture with openpyxl and confirmed:
+- All 6 case sheets have their named Table (`Case1Source`–`Case6Source`) with the exact ref range and headers listed above.
+- Case 4 has 4 data rows: row 1 CustomerID `"C1"`, row 2 CustomerID `None` (data type `n`, genuinely blank), row 3 CustomerID `=""` (data type `f`, a formula — evaluates to a true zero-length string once opened in Excel), row 4 CustomerID `"C2"` — matching the article's Case 4.
+- No `#NAME?`-risk functions used anywhere in this fixture (Power Query M code lives outside the cell-formula model, so the `_xlfn.` prefix issue that affected Pilot C/E does not apply here).
+
+LibreOffice headless recalculation was **not** used for this fixture, unlike Pilot C/E — there is no cell formula to check against an expected numeric/text result (Case 4's `=""` is trivial and needs no recalculation check), and LibreOffice cannot execute Power Query M code at all, so it offers no verification value for the actual case logic. Verification for Cases 1–8 will happen when the user builds each query in real Excel and the result table is screenshotted, per the plan in the `Instructions` sheet.
+
+**Status:** fixture created and verified structurally. Screenshots (8, English UI) still required from the user — capture plan and M code walkthrough delivered in chat. WordPress Draft not yet created.
