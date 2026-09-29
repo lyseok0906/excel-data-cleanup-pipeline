@@ -44,7 +44,7 @@ This article is written to reflect that correction from the start — the title,
 |---|---|---|
 | 1 | The array formula is syntactically valid and was reproduced exactly as written | PASS — matches the decision log's `[Observed]` record verbatim |
 | 2 | Every claimed behavior matches either official Microsoft documentation or project-recorded verification | PASS |
-| 3 | Retained reproduction evidence (fixture and/or screenshot) exists | **FAIL / NOT YET MET** — no fixture file for this topic exists in this repo, and no screenshots exist. Same primary blocker pattern as Pilot A/B/C/D. |
+| 3 | Retained reproduction evidence (fixture and/or screenshot) exists | **Fixture created (2026-09-28), verified via LibreOffice recalculation** — screenshots still pending, see §5/§7. |
 | 4 | Version applicability statement is accurate | PASS — this is the one Pilot where an earlier version claim was found wrong and corrected; this article reflects the corrected scope (Excel 2019/2016 fallback, not Excel 2021) throughout, and explicitly calls out the correction so a reader on Excel 2021 doesn't reach for an unnecessary workaround |
 | 5 | No known Blog B content trap is present | PASS — none of the three standing traps (CHAR/UNICHAR, null vs "", Go To Special blanks) apply to this topic |
 
@@ -59,7 +59,7 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 | 3 | Past-the-end behavior | C7:C9 showing blank cells (not error values) once all unique values are extracted | "IFERROR showing blank cells instead of errors once every unique value has been extracted" |
 | 4 | Version check | `UNIQUE()` entered directly in Excel 2021, showing it works natively (not `#NAME?`) | "UNIQUE function working natively in Excel 2021, confirming no fallback is needed there" |
 
-**Status: blocking**, same as Pilot A/B/C/D. English-UI capture required from the start.
+**Status: fixture created (2026-09-28)** — `fixtures/excel-unique-values-legacy-fallback_fixture.xlsx`. Sheet `Unique_Fallback` has the exact source list (`A2:A9` = Apple, Banana, Apple, Cherry, Banana, Date, Elderberry, Cherry), the legacy CSE array formula filled down `C2:C9` (each row's `$C$1:C{n-1}` reference grown individually), and `=UNIQUE(A2:A9)` in `E2` for the version-check screenshot. Verified via LibreOffice headless recalculation: `C2:C6` = Apple, Banana, Cherry, Date, Elderberry exactly, `C7:C9` = blank (not error values), and `UNIQUE()` computed without `#NAME?`. A `Capture_Notes` sheet gives cell-by-cell instructions for the 4 screenshots below, including a note to re-enter `C2` with Ctrl+Shift+Enter live in Excel to confirm the curly-brace behavior (a file-stored array formula flag isn't the same as a live CSE entry). **Still blocking:** English-UI screenshots have not yet been captured.
 
 ## 6. SEO/Search-Intent QA Checklist
 
@@ -85,9 +85,9 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 
 - WordPress upload: **NOT performed** — Draft-only, per instruction (public publish requires separate user approval).
 - Repo storage: article and this QA package to be committed to the repo this round; `docs/content_status.md` updated in the same commit.
-- Fixture: **does not exist yet** — primary blocker (§5).
-- Screenshot evidence: **does not exist yet** — primary blocker (§5), depends on the fixture above.
-- Residual risk: none beyond the standard fixture/screenshot gap — the version-scope correction (the one thing earlier project work got wrong on this topic) has already been applied throughout this article.
+- Fixture: **created (2026-09-28)** — `fixtures/excel-unique-values-legacy-fallback_fixture.xlsx`, verified via LibreOffice headless recalculation (see §10).
+- Screenshot evidence: **still not captured** — only remaining blocker; cell-by-cell capture plan is embedded in the fixture's `Capture_Notes` sheet.
+- Residual risk: none beyond the standard screenshot gap — the version-scope correction (the one thing earlier project work got wrong on this topic) has already been applied throughout this article.
 - Human Approval: not requested this round.
 - Independent QA: not yet submitted to ChatGPT this round (Pilot A–D each went through this step; recommend the same for Pilot E before considering it fully confirmed, consistent with the pattern established this session).
 
@@ -95,4 +95,18 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 
 **DRAFT — TECHNICALLY SOUND PER EXISTING RECORDS AND OFFICIAL DOCS, NOT YET EVIDENCE-COMPLETE.**
 
-Rationale: the article's central reproduced claim (the array formula's exact output against the documented test dataset) is a direct restatement of a project-verified reproduction already recorded in the decision log (Pilot E, PASS, no re-verification needed per the lightweight model). The version-scope claim — the one place earlier work on this topic was initially wrong — is corrected throughout and backed by official Microsoft documentation. The individual building-block functions are backed by official docs; the combined technique is honestly described as a well-known but not officially-documented-as-such pattern. No new research or Excel reproduction was performed this round. The article is **not** yet CONTENT READY, because — like Pilot A/B/C/D — no fixture or screenshots exist yet (§5). This completes Pilot A–E's initial conversion to production drafts; recommend independent ChatGPT QA before considering any of them past "content approved, screenshots pending."
+Rationale: the article's central reproduced claim (the array formula's exact output against the documented test dataset) is a direct restatement of a project-verified reproduction already recorded in the decision log (Pilot E, PASS, no re-verification needed per the lightweight model). The version-scope claim — the one place earlier work on this topic was initially wrong — is corrected throughout and backed by official Microsoft documentation. The individual building-block functions are backed by official docs; the combined technique is honestly described as a well-known but not officially-documented-as-such pattern. No new research or Excel reproduction was performed this round. The article is **not** yet fully evidence-complete: the fixture now exists and is verified (§10), but English-UI screenshots have not yet been captured. Recommend independent ChatGPT QA before considering this Pilot past "content approved, screenshots pending."
+
+## 10. Fixture Creation (2026-09-28)
+
+Built `fixtures/excel-unique-values-legacy-fallback_fixture.xlsx` (sheet `Unique_Fallback`) with the exact source list from the decision log (`A2:A9`) and the legacy CSE array formula filled down `C2:C9`, plus `=UNIQUE(A2:A9)` in `E2` for the Excel-2021-native version-check screenshot.
+
+Each row's array formula was written individually via `openpyxl.worksheet.formula.ArrayFormula` with its own growing `$C$1:C{n-1}` reference (not a single copy-pasted formula), matching how the article describes it being filled down top-to-bottom.
+
+**Verification note:** `UNIQUE` is a post-2007 function and needed the `_xlfn.UNIQUE` prefix in the raw formula (same issue caught and fixed during Pilot C's fixture build) to avoid `#NAME?` when opened outside of Excel's own save round-trip.
+
+Verified via `soffice --headless --convert-to xlsx` recalculation (Linux/LibreOffice sanity check, not the target Windows/Excel environment): `C2:C6` computed to exactly `Apple, Banana, Cherry, Date, Elderberry` (matching the decision log's original reproduction), `C7:C9` computed to blank (not `#N/A`), confirming `IFERROR` behaves as the article describes. `E2` (`UNIQUE(A2:A9)`) computed without `#NAME?`, confirming the formula is syntactically valid; LibreOffice's handling of the dynamic-array spill into `E3:E6` was inconclusive in this cross-platform check (not the real target — real Excel 2021+ on the user's machine is what actually confirms scenario 4), so that screenshot should still be captured and read plainly rather than assumed.
+
+A `Capture_Notes` sheet in the workbook gives the exact cell references, expected formula-bar contents, and draft alt text for each of the 4 required screenshots, plus a reminder to re-enter `C2` live with Ctrl+Shift+Enter to confirm the curly-brace CSE display, since a file-stored array-formula flag isn't the same as Excel's live entry behavior.
+
+**Remaining blocker:** English-UI screenshot capture in Excel, per the `Capture_Notes` sheet.
