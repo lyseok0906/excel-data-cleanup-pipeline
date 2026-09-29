@@ -127,3 +127,20 @@ User captured all 4 required screenshots in Excel on the target machine (Korean-
 **Technical QA item 3 (reproduction evidence) status: now PASS.** All 4 screenshots match the article's claims exactly.
 
 **Final Verdict updated:** DRAFT — CONTENT APPROVED, FIXTURE + SCREENSHOTS COMPLETE. Ready for WordPress Draft creation, pending user go-ahead (same protocol as Pilot C/G).
+
+## 12. WordPress Draft Created (2026-09-29)
+
+Created via REST API through the already-authenticated Claude Browser session (cookie + nonce, no credentials entered), same method as Pilot C/G:
+
+- **Post ID 44**, slug `excel-unique-values-legacy-fallback`, status `draft`.
+- Category: created new category "Formulas" (id 5) via REST — did not exist yet on this site.
+- Content: full article converted to Gutenberg blocks matching `content/excel-unique-values-legacy-fallback.md` exactly, with 4 bolded `[IMAGE N — filename.png]` placeholder paragraphs marking insertion points:
+  1. `04-unique-function-native-excel2021.png` — after "Check Your Version First"
+  2. `01-array-formula-curly-braces.png` — after the CSE entry instructions in "The Legacy Array Formula"
+  3. `02-unique-values-first-appearance-order.png` — after the reproduction result paragraph, same section
+  4. `03-iferror-blank-not-error.png` — after the IFERROR explanation in "How the Formula Works"
+- Excerpt set to the meta description.
+- Rank Math SEO fields set via `wp.data.dispatch('rank-math')`: focus keyword `excel unique values without unique function`, SEO title matching the article title, meta description matching the excerpt. Saved via `core/editor` `savePost()`, verified persisted after a full page reload.
+- Post status confirmed `draft` before and after the SEO save.
+
+**Remaining steps (same protocol as Pilot C/G):** user attaches the 4 images directly in the already-open editor; Cowork then sets alt text on each image (media library + inline `<img>`) using the exact wording from §5/§11; status stays Draft until a separate explicit publish decision.
