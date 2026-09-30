@@ -7,7 +7,7 @@ focus_keyword: "power query null vs empty string"
 internal_link_candidates:
   - "power-query-remove-duplicates" # Pilot A, production draft exists — not yet published, do not link until it exists
   - "excel-remove-blank-rows-guide" # Pilot G, production draft exists — not yet published, do not link until it exists
-status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — fixture and screenshots not yet captured — revised 2026-09-22 per independent QA"
+status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — fixture built, 5/5 screenshots captured and verified — revised 2026-09-30"
 ---
 
 # Power Query: Why null and "" (Empty String) Are Not the Same Thing
@@ -61,6 +61,8 @@ Table.ReplaceValue(Source, "", null, Replacer.ReplaceValue, {"Middle"})
 ```
 
 After this step, every "no middle name" row is a genuine `null`, and `Text.Combine` will skip all of them consistently, regardless of whether the original data used `null` or `""` to represent "nothing here."
+
+One practical note from testing this: Power Query columns are computed once, at the step where they're added, not live-recalculated. If you already have a `Text.Combine` step earlier in your query, adding `Table.ReplaceValue` after it will **not** retroactively fix that column's existing output. Put the `Table.ReplaceValue` step before your `Text.Combine` step, or add a fresh `Text.Combine` column after the fix, to see the corrected result.
 
 ## One-line Summary
 
