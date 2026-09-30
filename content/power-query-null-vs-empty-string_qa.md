@@ -153,3 +153,9 @@ Rationale: the article's two central claims (the exact null-vs-"" output differe
 **Status: RESOLVED.** Fixture and all 5 screenshots complete, saved to `evidence/power-query-null-vs-empty-string/`. Technical QA item 3 (retained reproduction evidence) now PASSes.
 
 **Next step:** WordPress Draft creation, images/alt text/SEO, then user-initiated publish — same pattern as Pilots A, B, C, E, G.
+
+## 12. WordPress Draft Created (2026-09-30)
+
+Draft created via REST API — post ID **84**, category "Power Query" (existing, id 6), slug `power-query-null-vs-empty-string`, status `draft`. Content converted to Gutenberg blocks from the final article (including the new step-order note added to "How to Fix It"), with 4 image placeholder paragraphs (Case 1; Case 2-3 combined; Case 4; Case 5), each labeled with a case number in its alt text per the lesson learned from Pilot B's image-ordering mixup.
+
+**Next step:** user attaches the 4 screenshots in place of the placeholders, then alt text + Rank Math SEO, then user-initiated Publish.
