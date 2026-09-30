@@ -250,3 +250,20 @@ The cause: every section header in the `Instructions` sheet was written as a lit
 **Lesson for future fixtures:** any plain-text content written into a cell via openpyxl — not just deliberate formulas — must be checked for a leading `=`, since openpyxl has no way to distinguish "this text happens to start with an equals sign" from "this is a formula." Section dividers, code comments, or any instructional text using `=` as a visual marker (banners, before/after diffs, etc.) need a different leading character.
 
 **Status:** CONFIRMED FIXED — user reports the fixture now opens in real Excel with no repair dialog (2026-09-30). Fixture is complete and stable. Next step: user builds the 8 Power Query queries per the M code walkthrough (delivered in chat and in the Instructions sheet) and captures the 8 required screenshots (English UI). WordPress Draft not yet created.
+
+## 16. Screenshots Captured and Verified — 8/8 (2026-09-30)
+
+User built all 8 Power Query queries per the §15 M code walkthrough and captured/sent all 8 required screenshots. Each was checked against the case's expected result before approval:
+
+1. **Case 1** — result table, 2 rows (C1/100, C2/200). Matches (C1's surviving Amount is unconstrained by this case).
+2. **Case 2** — result table, C1 UpdatedDate 2024-01-15/Amount 120, C2/200. Matches — older C1 row correctly dropped.
+3. **Case 3** — result table, all 3 rows preserved (C1 on two different OrderDates, C2). Matches — composite key correctly did not collapse the two C1 rows.
+4. **Case 4** — result table, 4 rows: C1/100, C2/200, plus both blank-key rows (999, 888) kept separately (one shown as `null`, the other as a true blank cell — visually confirms `null` and `""` were not collapsed into a single row). Matches.
+5. **Case 5** — result table, 1 row: C1, UpdatedDate 2024-01-15, RowID 3, Amount 160. Matches — same-date tie correctly broken by RowID descending.
+6. **Case 6** — `WithSortDate` intermediate step (not the final result), showing the `_SortDate` column with the null `OrderDate` row substituted to 1900-01-01 and the real-date row unchanged. Matches.
+7. **Case 7** — right-click context menu on a query built on `Excel.CurrentWorkbook()` (the user's surviving query at time of capture was the Case 6 query, not Case 1 — accepted as equivalent evidence since the query-folding behavior being demonstrated depends on the source type, `Excel.CurrentWorkbook()`, not on which case's transformation logic sits on top of it). Note: in this Excel build, "View Native Query" does not appear at all in the menu (rather than appearing greyed out) for a non-foldable in-workbook source — this absence is itself the evidence Case 7 is documenting, and the walkthrough text should be read as "greyed out or absent" going forward.
+8. **Case 8** — same query (Case 6) refreshed; result unchanged (CustomerID C1, RowID 2, Amount 150, OrderDate/SortDate correctly displaying as 2024-02-01 after the user reformatted the date columns for readability). Matches.
+
+**Process note:** during capture, the user's Power Query queries for Cases 1–5 were lost (each new Blank Query was left named "Query1" by default, so later queries appear to have overwritten earlier connection entries — only one query, "Query1" holding the Case 6 logic, remained by the time Cases 7–8 were attempted). This did not block completion since Cases 1–6's result screenshots had already been captured and approved before this was discovered, and Cases 7–8 only need any query built on the same source type. **Lesson for future pilots with multiple Power Query cases in one fixture: instruct the user to rename each query immediately after creating it** (Query Settings pane → Name field) before moving to the next case, to avoid this.
+
+**Status:** all 8 screenshots captured and verified against expected results. Fixture and screenshots complete. Next: WordPress Draft creation (title/content/category/meta via REST, images attached manually by the user per their stated preference — same pattern as Pilots C/E/G).
