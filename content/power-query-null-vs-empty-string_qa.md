@@ -43,7 +43,7 @@ Status at end of this package: see "Final Verdict" at the bottom.
 |---|---|---|
 | 1 | Every M code snippet in the article is syntactically valid **and independently runnable as written** | PASS (revised this round — the previous `= [Middle] = null` / `= [Middle] = ""` lines were not standalone-runnable M without row context; replaced with `Table.AddColumn` steps, see §9) |
 | 2 | Every claimed behavior matches either official Microsoft documentation or project-recorded verification | PASS |
-| 3 | Retained reproduction evidence (fixture and/or screenshot) exists | **FAIL / NOT YET MET** — no fixture file for this topic exists in this repo, and no screenshots exist. Same primary blocker pattern as Pilot A/B/C. |
+| 3 | Retained reproduction evidence (fixture and/or screenshot) exists | **PASS** — `fixtures/power-query-null-vs-empty-string_fixture.xlsx` built and committed; 5/5 required screenshots captured, verified, and saved to `evidence/power-query-null-vs-empty-string/` (2026-09-30). |
 | 4 | Version applicability statement is accurate | PASS — Power Query/M behavior, not version-gated; correctly scoped to "all current Excel versions and Power BI" |
 | 5 | No known Blog B content trap is present, and any cross-references to related traps (Go To Special > Blanks) are scoped as analogies, not asserted as the same mechanism | PASS — revised this round per ChatGPT QA (see §9) |
 
@@ -59,7 +59,7 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 | 4 | IsNull / IsEmptyString flag columns | `Table.AddColumn` result showing TRUE/FALSE flags correctly distinguishing the two rows | "Table.AddColumn flag columns distinguishing null from empty string row by row" |
 | 5 | Fix applied | Table.ReplaceValue step converting "" to null, followed by consistent Text.Combine output for both rows | "Table.ReplaceValue normalizing empty strings to null before combining text" |
 
-**Status: blocking**, same as Pilot A/B/C. English-UI capture required from the start.
+**Status: RESOLVED (2026-09-30).** Fixture built; all 5 screenshots captured in English UI in local Excel 2021 and saved to `evidence/power-query-null-vs-empty-string/`.
 
 ## 5. SEO/Search-Intent QA Checklist
 
@@ -86,14 +86,14 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 
 - WordPress upload: **NOT performed** — Draft-only, per instruction (public publish requires separate user approval).
 - Repo storage: revised article and this QA package to be committed to the repo this round; `docs/content_status.md` updated in the same commit.
-- Fixture: **does not exist yet** — primary blocker (§4). Future fixture should use matching First/Last values across the null and "" rows, per §4.
-- Screenshot evidence: **does not exist yet** — primary blocker (§4), depends on the fixture above.
+- Fixture: **exists** — `fixtures/power-query-null-vs-empty-string_fixture.xlsx` (built 2026-09-30), using matching First/Last values across the null and "" rows, per §4.
+- Screenshot evidence: **complete** — 5/5 screenshots captured and verified, saved to `evidence/power-query-null-vs-empty-string/`.
 - Human Approval: not requested this round.
 - Independent QA: submitted to ChatGPT for Technical/SEO/US-English review this round — verdict "revision required," changes applied, see §9.
 
 ## 8. Final Verdict
 
-**DRAFT — CONTENT APPROVED, PENDING FIXTURE / ENGLISH-UI SCREENSHOTS.** (Per ChatGPT's second-round QA: "Pilot D: DRAFT — 내용 승인 가능, fixture·영문 UI 스크린샷 대기.")
+**CONTENT READY — fixture and 5/5 English-UI screenshots captured and verified (2026-09-30). Ready for WordPress Draft creation.**
 
 Rationale: the article's two central claims (the exact null-vs-"" output difference in `Text.Combine`) are direct restatements of a project-verified single-execution reproduction already recorded in the decision log (Pilot D, PASS with no re-verification needed per the lightweight model). The general `Text.Combine` syntax is backed by an official Microsoft Learn page. Round 2 fixed a preview-description contradiction in the opening paragraph, corrected the `Table.AddColumn` example to be a properly chained, independently runnable Advanced Editor sequence (with a separate Custom Column UI instruction), and confirmed code fences are clean 3-backtick pairs throughout (see §10). No new research or Power Query reproduction was performed this round. Content is approved; the sole remaining blocker before this can move past Draft is fixture creation and English-UI screenshot capture (§4).
 
@@ -137,3 +137,19 @@ Rationale: the article's two central claims (the exact null-vs-"" output differe
 **Result:** ChatGPT's round-2 verdict for this article: **"Pilot D: DRAFT — 내용 승인 가능, fixture·영문 UI 스크린샷 대기"** (content approved, pending fixture/English-UI screenshots), conditional on applying fixes 1 and 2 above (both applied) and confirming fix 3 (confirmed — no repo file change needed).
 
 **Not changed:** the underlying technical facts (Text.Combine skips null but not "", producing the documented one-space vs. two-space difference; the visual italic/non-italic distinction in the editor) — these were not disputed by the QA and remain as originally recorded from the decision log.
+
+## 11. Fixture / Screenshot Round (2026-09-30)
+
+**Fixture:** `fixtures/power-query-null-vs-empty-string_fixture.xlsx` — `Data` sheet has a `NameData` table with row 2 (John/null/Smith) and row 3 (John/""/Smith, written via `=""` per the Pilot A/B lesson that a literal `""` collapses to `None` in openpyxl) sharing the same First/Last, per this QA package's round-1 finding (§9) that a fair comparison needs matching names. Row 4 (Mary/Ann/Johnson) is a contrast baseline. `Instructions` sheet is plain text only, no leading `=` on any cell.
+
+**Screenshots (5/5, English UI, captured in local Excel 2021 — Power Query is not version-gated the way TEXTSPLIT was in Pilot B):**
+- Case 1 (`case1_null_vs_empty_visual.png`): confirms the visual distinction claimed in the article — row 2's Middle shows the literal word "null" in italics, row 3's Middle shows as a genuinely blank cell.
+- Case 2-3 (`case2-3_textcombine_result.png`): `Text.Combine({[First],[Middle],[Last]}, " ")` produces "John Smith" (single space) for the null row and "John  Smith" (double space) for the "" row — confirms the article's central claim exactly, with matching names this time.
+- Case 4 (`case4_isnull_isemptystring_flags.png`): `IsNull`/`IsEmptyString` custom columns correctly show TRUE/FALSE distinguishing the two rows.
+- Case 5 (`case5_replacevalue_fix_applied.png`): Replace Values normalizes "" to null; a **new** Text.Combine column added after that step ("CombinedFixed") shows both rows converging to "John Smith".
+
+**Process note:** the original `Combined` column (added before the Replace Values fix) does not retroactively recalculate when `Middle` changes in a later step — Power Query columns are computed once, at the step where they're added, not live-recalculated. To see the fix take visible effect, a fresh Text.Combine column has to be added *after* the Replace Values step. Documented here for future fixture/screenshot work involving step-order-dependent transformations (same category of lesson as Pilot A's query-renaming issue and Pilot B's `_xlfn.`/`@`-prefix issue).
+
+**Status: RESOLVED.** Fixture and all 5 screenshots complete, saved to `evidence/power-query-null-vs-empty-string/`. Technical QA item 3 (retained reproduction evidence) now PASSes.
+
+**Next step:** WordPress Draft creation, images/alt text/SEO, then user-initiated publish — same pattern as Pilots A, B, C, E, G.
