@@ -32,9 +32,9 @@ Status at end of this package: see "Final Verdict" at the bottom.
 | 4 | `TEXTSPLIT` is scoped to Microsoft 365 and Excel 2024 | Same official page | Official doc |
 | 5 | `TEXTSPLIT` returns `#NAME?` in Excel 2021 (all delimiter/blank/multiple-delimiter cases tested) | Decision log, "LIVE TEST 실행 결과 독립 검증" (2026-09-15) — T1 result, reproduced in the user's actual Excel 2021 | **Project-verified reproduction**, not merely inferred from version-scoping |
 | 6 | Power Query "Split Column by Delimiter" with "Rows" option performs the same split on older versions | [Split a column of text (Power Query)](https://support.microsoft.com/en-us/office/split-a-column-of-text-power-query-5282d425-6dd0-46ca-95bf-8e0da9539662) — Microsoft Support | Official doc |
-| 7 | Power Query's split-into-rows step has no single built-in "ignore empty" toggle (a separate filter step is needed) | Not directly stated in the official page cited; inferred from the documented step sequence, not from a project reproduction | **Disclosed as the weakest claim in the article (see Finding F below) — flagged, not re-verified this round** |
+| 7 | Power Query's split-into-rows step has no single built-in "ignore empty" toggle (a separate filter step is needed) | **Project-reproduced 2026-09-30**: fixture row `Apple,,Cherry` split by comma into rows produces a literal blank row; no built-in skip-blank option exists in the Split Column by Delimiter dialog. See `evidence/excel-split-comma-values-into-rows/case6_result_with_blank_row.png` and `case7_filtered_no_blanks.png`. | **RESOLVED — now a project-verified reproduction, not an inference (see Finding F below)** |
 
-**Finding F (flag, not fabricated as verified):** claim #7 above is the one statement in this article that is neither an official-doc quote nor a project-reproduced result — it's a reasonable inference from how the Power Query UI is documented to work, carried over unchanged from this project's prior design notes (2026-09-10 LIVE TEST spec listed "blanks" as one of the four T1 validation dimensions, implying this was already a known consideration, but the decision log does not record a specific reproduced outcome for it). The article's own wording softens this ("does not have a single... toggle" rather than an absolute claim) and offers a workaround rather than asserting a specific mechanism. This should be the first thing re-verified when fixture/screenshot work happens for this article.
+**Finding F (RESOLVED 2026-09-30):** claim #7 was previously an unverified inference; it is now a direct project reproduction. Using the fixture's ID 2 row (`Apple,,Cherry`), Split Column by Delimiter (Comma, Rows) produced rows `Apple` / `` (blank) / `Cherry` — confirming there is no built-in "skip blank" toggle and a separate filter step (Home > Remove Rows > Remove Blank Rows, or unchecking `(blank)` in the column filter) is required to remove it. Separately, the fixture's ID 3 row (`Apple;Banana,Cherry`, mixed comma/semicolon) confirmed that splitting by comma only leaves the semicolon-joined portion (`Apple;Banana`) intact in one row — Power Query's Split Column by Delimiter takes exactly one delimiter per step, with no array-of-delimiters equivalent to `TEXTSPLIT`'s `row_delimiter` array. Both findings are now reflected in the article (Method 2, the comparison table, the one-line summary, and the Sources footnote).
 
 **Conclusion:** 6 of 7 claims trace directly to either an official Microsoft page or a project-reproduced result already in the decision log. One claim (#7) is disclosed as unverified inference rather than presented as confirmed fact — consistent with the "no overstated/unconfirmed claims" rule.
 
@@ -43,8 +43,8 @@ Status at end of this package: see "Final Verdict" at the bottom.
 | # | Item | Result |
 |---|---|---|
 | 1 | Every formula/UI-step sequence in the article is accurate to current Excel/Power Query behavior as documented | PASS (see claim map above; item 7 flagged, not failed — it's disclosed rather than overstated) |
-| 2 | Every claimed behavior matches either official Microsoft documentation or project-recorded verification | PASS with Finding F disclosed |
-| 3 | Retained reproduction evidence (fixture and/or screenshot) exists for each method | **FAIL / NOT YET MET** — no fixture file for this topic exists in this repo, and no screenshots exist. Same primary blocker pattern as Pilot A. |
+| 2 | Every claimed behavior matches either official Microsoft documentation or project-recorded verification | PASS — Finding F now resolved by direct reproduction |
+| 3 | Retained reproduction evidence (fixture and/or screenshot) exists for each method | **PASS** — `fixtures/excel-split-comma-values-into-rows_fixture.xlsx` built and committed; 7/7 required screenshots captured, verified, and saved to `evidence/excel-split-comma-values-into-rows/` (2026-09-30). |
 | 4 | Version applicability statement is accurate | PASS — matches the decision log's LIVE TEST T1/T4 version split exactly |
 | 5 | No known Blog B content trap is present (CHAR vs UNICHAR, Text.Combine null-vs-empty-string, Go To Special blank-row deletion) | PASS — none of the three known traps apply to this topic |
 
@@ -62,7 +62,7 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 | 6 | Power Query result | Resulting table with one row per split value | "Power Query result showing comma-separated values split into individual rows" |
 | 7 | Power Query blank-row handling | Before/after of filtering out blank rows produced by consecutive delimiters | "Power Query filter step removing blank rows created by consecutive delimiters" |
 
-**Status: blocking**, same as Pilot A. English-UI capture required from the start.
+**Status: RESOLVED (2026-09-30).** Fixture built (`fixtures/excel-split-comma-values-into-rows_fixture.xlsx`); all 7 screenshots captured in English UI (Excel Online for Cases 1-3, local Excel 2021 for Case 4, local Excel 2021 Power Query for Cases 5-7) and saved to `evidence/excel-split-comma-values-into-rows/`. Case 1-3 screenshot covers all three TEXTSPLIT cases in one image (same worksheet view); Cases 6/7 use before/after screenshots of the same filter step.
 
 ## 5. SEO/Search-Intent QA Checklist
 
@@ -87,15 +87,15 @@ No fixture exists in this repo for this topic. Planned fixture (for a future rou
 ## 7. Publish-Readiness Status
 
 - WordPress upload: **NOT performed** — Draft-only, per instruction (public publish requires separate user approval).
-- Repo storage: article and this QA package committed to the repo this round; `docs/content_status.md` updated in the same commit.
-- Fixture: **does not exist yet** — primary blocker (§4).
-- Screenshot evidence: **does not exist yet** — primary blocker (§4), depends on the fixture above.
-- Residual risk: Finding F (claim #7, Power Query's blank-handling behavior) is the one claim to re-verify first when fixture/screenshot work begins for this article.
-- Human Approval: not requested this round.
+- Repo storage: article, this QA package, fixture, and evidence screenshots committed to the repo; `docs/content_status.md` updated in the same round.
+- Fixture: **exists** — `fixtures/excel-split-comma-values-into-rows_fixture.xlsx` (built 2026-09-30).
+- Screenshot evidence: **complete** — 7/7 screenshots captured and verified, saved to `evidence/excel-split-comma-values-into-rows/`.
+- Residual risk: none outstanding from §2's claim map — Finding F (claim #7) is now resolved by direct reproduction rather than flagged as an inference.
+- Human Approval: not requested this round; WordPress Draft creation is the next step.
 
 ## 8. Final Verdict
 
-**DRAFT — CONTENT APPROVED (per ChatGPT independent QA, 2026-09-23) — PENDING FIXTURE / ENGLISH-UI SCREENSHOTS.**
+**CONTENT READY — fixture and 7/7 English-UI screenshots captured and verified (2026-09-30). Ready for WordPress Draft creation.**
 
 Rationale: the article's remaining technical claims trace directly to an official Microsoft page or an already-verified project reproduction (the Excel 2021 `#NAME?` finding). The two Power Query claims that were not backed by either (blank-row handling and multiple-delimiter support) are now stated as explicitly unverified rather than presented as fact — see §9. No new research or Excel reproduction was performed this round. Confirmed by independent ChatGPT QA (2026-09-23): the TEXTSPLIT content held up and the softened Power Query language was accepted as-is, no further changes required. Same as Pilot A, this article is **not** yet CONTENT READY only because its High-risk Integrated Guide grade requires fixture-backed screenshots, and none exist yet (§4).
 
@@ -114,3 +114,20 @@ Rationale: the article's remaining technical claims trace directly to an officia
 4. Updated the one-line summary and the Sources footnote to match — both now state plainly that Power Query's blank-row and multi-delimiter behavior for this step has not been verified by this project.
 
 **Not changed:** the TEXTSPLIT-side claims (row_delimiter, ignore_empty, delimiter array, Microsoft 365/2024 scoping, and the Excel 2021 `#NAME?` reproduction) — these are backed by the official Microsoft page or a project-verified reproduction and were not disputed by the QA.
+
+## 10. Fixture / Screenshot Round (2026-09-30)
+
+**Fixture:** `fixtures/excel-split-comma-values-into-rows_fixture.xlsx` — built with openpyxl. `Data` sheet has a `RawData` table (ID/Tags) covering a basic comma list, consecutive commas, mixed comma/semicolon delimiters, no delimiter, and a trailing comma. `TEXTSPLIT_Demo` sheet has 4 live formulas for Cases 1-3 (Microsoft 365/2024 only); `Instructions` sheet is plain text only (no leading `=` on any cell, per the lesson from Pilot A's fixture-corruption incident).
+
+**Issue found and fixed:** the first build of `TEXTSPLIT_Demo`'s formulas returned `#NAME?` even in Excel Online (which does support `TEXTSPLIT`). Root cause: openpyxl writes newer dynamic-array functions without the internal `_xlfn.` prefix Excel needs to resolve the function name, so Excel couldn't recognize `TEXTSPLIT` at all and displayed the formula with a spurious `@` (implicit intersection) prepended. Fixed by writing the formulas as `=_xlfn.TEXTSPLIT(...)`. After the fix, the formulas still showed `@`-prefixed single-value results instead of spilling (a separate openpyxl limitation — it doesn't write the dynamic-array cell metadata Excel needs to spill automatically); resolved by having the user re-enter each formula cell once (F2, Enter) in Excel Online, which cleared the `@` and enabled proper spilling. **Lesson for future fixtures with newer Excel functions (TEXTSPLIT, XLOOKUP, FILTER, SORT, UNIQUE, SEQUENCE, etc.): write them as `=_xlfn.<FUNCTION>(...)` and expect to re-enter each formula cell once after opening in real Excel to clear the `@` and enable spilling.**
+
+**Screenshots (7/7, English UI):**
+- Case 1-3 (`case1-3_textsplit_spill_results.png`): captured in Excel Online (TEXTSPLIT requires Microsoft 365/2024 — the user's local Excel is a perpetual Excel 2021 license, so Excel Online was used via the user's OneDrive/Microsoft account, with the browser display language switched to English via Chrome's language settings). Shows all 3 cases spilling correctly in one view.
+- Case 4 (`case4_name_error_excel2021.png`): captured in local Excel 2021, confirming `#NAME?` on all 4 TEXTSPLIT formula cells automatically (no separate fixture needed for this case).
+- Case 5 (`case5_split_column_dialog.png`): Power Query Split Column by Delimiter dialog, Comma + Rows, captured in local Excel 2021.
+- Case 6 (`case6_result_with_blank_row.png`): split result, showing a real blank row for ID 2 (`Apple,,Cherry`) and `Apple;Banana` staying joined for ID 3 (`Apple;Banana,Cherry`) — this directly resolves Finding F (see §2).
+- Case 7 (`case7_filtered_no_blanks.png`): same result after filtering blank Tags rows out via the column filter.
+
+**Finding F: RESOLVED.** See §2 for the updated claim-by-claim entry. The article, comparison table, one-line summary, and Sources footnote were all updated to state the Power Query blank-row and multi-delimiter behavior as project-confirmed findings rather than disclosed-as-unverified inferences.
+
+**Next step:** WordPress Draft creation, images/alt text/SEO, then user-initiated publish — same pattern as Pilot A.
