@@ -267,3 +267,17 @@ User built all 8 Power Query queries per the §15 M code walkthrough and capture
 **Process note:** during capture, the user's Power Query queries for Cases 1–5 were lost (each new Blank Query was left named "Query1" by default, so later queries appear to have overwritten earlier connection entries — only one query, "Query1" holding the Case 6 logic, remained by the time Cases 7–8 were attempted). This did not block completion since Cases 1–6's result screenshots had already been captured and approved before this was discovered, and Cases 7–8 only need any query built on the same source type. **Lesson for future pilots with multiple Power Query cases in one fixture: instruct the user to rename each query immediately after creating it** (Query Settings pane → Name field) before moving to the next case, to avoid this.
 
 **Status:** all 8 screenshots captured and verified against expected results. Fixture and screenshots complete. Next: WordPress Draft creation (title/content/category/meta via REST, images attached manually by the user per their stated preference — same pattern as Pilots C/E/G).
+
+## 17. WordPress Draft Created (2026-09-30)
+
+Following the same pattern as Pilots C/E/G: title, content, category and Rank Math SEO meta set via REST/`wp.data`, images to be attached manually by the user.
+
+- **Post ID:** 56
+- **URL:** https://cleansheethq.com/?p=56
+- **Status:** draft
+- **Category:** "Power Query" (id 6) — newly created; did not exist before this pilot.
+- **Content:** full article converted to Gutenberg blocks (headings, paragraphs, code blocks, lists), with 8 `[IMAGE N — description]` placeholder paragraphs marking where each of the 8 verified screenshots (§16) goes.
+- **Rank Math SEO:** set via `wp.data.dispatch('rank-math')` (REST doesn't expose Rank Math postmeta on this site) — focus keyword "power query remove duplicates", SEO title matching the H1, meta description matching the article's `meta_description` frontmatter. Saved via `core/editor.savePost()`, confirmed via full page reload + re-read (status remained `draft`).
+- **Not yet done:** image attachment (user will attach manually), alt text, and publish (pending explicit user approval, as with all prior pilots).
+
+**Status:** Draft ready for the user to attach the 8 images.
