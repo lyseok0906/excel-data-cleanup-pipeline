@@ -7,7 +7,7 @@ focus_keyword: "excel split comma separated values into rows"
 internal_link_candidates:
   - "power-query-remove-duplicates" # Pilot A, production draft exists — not yet published, do not link until it exists
   - "excel-remove-blank-rows-guide" # Pilot G, production draft exists — not yet published, do not link until it exists
-status: "DRAFT — NOT UPLOADED TO WORDPRESS — PENDING HUMAN APPROVAL — fixture built, 7/7 screenshots captured and verified, Finding F resolved by reproduction — revised 2026-09-30"
+status: "PUBLISHED — https://cleansheethq.com/excel-split-comma-values-into-rows/ (2026-09-30)"
 ---
 
 # Split Comma-Separated Values into Rows in Excel (TEXTSPLIT vs Power Query)

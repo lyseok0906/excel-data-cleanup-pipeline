@@ -145,3 +145,7 @@ First attachment attempt had images shifted one slot (Case 1-3 image duplicated 
 Final image order confirmed via REST (post 69, media IDs 76-80): Case 1-3 → Case 4 → Case 5 → Case 6 → Case 7, matching the article's section order. Alt text set both in the media library and inline on each `<img>` tag (regex on the `wp-image-N` class, since alt precedes the class attribute in Gutenberg's markup — first attempt's regex assumed the wrong attribute order and silently no-op'd, caught by re-verifying via REST). Rank Math SEO set via `wp.data.dispatch('rank-math')` (title, meta description, focus keyword = "excel split comma separated values into rows"), confirmed persisted after a full page reload.
 
 Draft (post ID 69) is now content + fixture + evidence + images + alt text + SEO complete. Only remaining step is user-initiated Publish.
+
+## 13. Published (2026-09-30)
+
+User clicked Publish in the WordPress editor (Cowork cannot perform this action itself — platform-level restriction). Confirmed via REST: status `publish`, URL `https://cleansheethq.com/excel-split-comma-values-into-rows/`, published 2026-09-30T08:26:58. **Blog B's fifth live article** (after excel-remove-blank-rows-guide, excel-trim-not-removing-nonbreaking-space, excel-unique-values-legacy-fallback, power-query-remove-duplicates).
