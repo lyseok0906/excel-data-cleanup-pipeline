@@ -159,3 +159,11 @@ Rationale: the article's two central claims (the exact null-vs-"" output differe
 Draft created via REST API — post ID **84**, category "Power Query" (existing, id 6), slug `power-query-null-vs-empty-string`, status `draft`. Content converted to Gutenberg blocks from the final article (including the new step-order note added to "How to Fix It"), with 4 image placeholder paragraphs (Case 1; Case 2-3 combined; Case 4; Case 5), each labeled with a case number in its alt text per the lesson learned from Pilot B's image-ordering mixup.
 
 **Next step:** user attaches the 4 screenshots in place of the placeholders, then alt text + Rank Math SEO, then user-initiated Publish.
+
+## 13. Images Attached, Alt Text, and SEO Set (2026-09-30)
+
+Images attached without the ordering issue seen in Pilot B (case-number labels in placeholder alt text worked). One REST check immediately after the user's report showed only 3/4 images (save-timing false alarm, same pattern as Pilot A/D's earlier checks) — a second check ~3s later confirmed all 4 present in correct order (media IDs 89-92: Case 1, Case 2-3, Case 4, Case 5).
+
+Alt text set both in the media library and inline on each `<img>` tag. Rank Math SEO set via `wp.data.dispatch('rank-math')` (title, meta description, focus keyword = "power query null vs empty string"), confirmed persisted after a full page reload.
+
+Draft (post ID 84) is now content + fixture + evidence + images + alt text + SEO complete. Only remaining step is user-initiated Publish.
