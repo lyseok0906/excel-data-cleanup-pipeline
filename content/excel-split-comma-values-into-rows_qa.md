@@ -131,3 +131,9 @@ Rationale: the article's remaining technical claims trace directly to an officia
 **Finding F: RESOLVED.** See §2 for the updated claim-by-claim entry. The article, comparison table, one-line summary, and Sources footnote were all updated to state the Power Query blank-row and multi-delimiter behavior as project-confirmed findings rather than disclosed-as-unverified inferences.
 
 **Next step:** WordPress Draft creation, images/alt text/SEO, then user-initiated publish — same pattern as Pilot A.
+
+## 11. WordPress Draft Created (2026-09-30)
+
+Draft created via REST API (existing logged-in browser session's nonce, no password entry) — post ID **69**, category "Power Query" (existing, id 6), slug `excel-split-comma-values-into-rows`, status `draft`. Content converted to Gutenberg blocks from the final article (post-Finding-F-resolution version), with 5 image placeholder paragraphs marking where the 7 screenshots go (Case 1-3 combined into placeholder 1, Case 4 → placeholder 2, Case 5 → placeholder 3, Case 6 → placeholder 4, Case 7 → placeholder 5). Images to be attached by the user directly in the editor, per the established Pilot A/C/E/G pattern.
+
+**Next step:** user attaches the 5 screenshots in place of the placeholders, then alt text + Rank Math SEO (title/meta description/focus keyword), then user-initiated Publish.
