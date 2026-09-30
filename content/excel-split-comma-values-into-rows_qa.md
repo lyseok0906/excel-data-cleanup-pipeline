@@ -137,3 +137,11 @@ Rationale: the article's remaining technical claims trace directly to an officia
 Draft created via REST API (existing logged-in browser session's nonce, no password entry) — post ID **69**, category "Power Query" (existing, id 6), slug `excel-split-comma-values-into-rows`, status `draft`. Content converted to Gutenberg blocks from the final article (post-Finding-F-resolution version), with 5 image placeholder paragraphs marking where the 7 screenshots go (Case 1-3 combined into placeholder 1, Case 4 → placeholder 2, Case 5 → placeholder 3, Case 6 → placeholder 4, Case 7 → placeholder 5). Images to be attached by the user directly in the editor, per the established Pilot A/C/E/G pattern.
 
 **Next step:** user attaches the 5 screenshots in place of the placeholders, then alt text + Rank Math SEO (title/meta description/focus keyword), then user-initiated Publish.
+
+## 12. Images Attached, Alt Text, and SEO Set (2026-09-30)
+
+First attachment attempt had images shifted one slot (Case 1-3 image duplicated 3x, Case 6/7 never inserted) — caught and fixed by resetting the post content back to plain-text placeholders via REST, then the user re-attached all 5 images correctly, verified this time by explicit case-number labels added to each placeholder's alt text.
+
+Final image order confirmed via REST (post 69, media IDs 76-80): Case 1-3 → Case 4 → Case 5 → Case 6 → Case 7, matching the article's section order. Alt text set both in the media library and inline on each `<img>` tag (regex on the `wp-image-N` class, since alt precedes the class attribute in Gutenberg's markup — first attempt's regex assumed the wrong attribute order and silently no-op'd, caught by re-verifying via REST). Rank Math SEO set via `wp.data.dispatch('rank-math')` (title, meta description, focus keyword = "excel split comma separated values into rows"), confirmed persisted after a full page reload.
+
+Draft (post ID 69) is now content + fixture + evidence + images + alt text + SEO complete. Only remaining step is user-initiated Publish.
