@@ -281,3 +281,11 @@ Following the same pattern as Pilots C/E/G: title, content, category and Rank Ma
 - **Not yet done:** image attachment (user will attach manually), alt text, and publish (pending explicit user approval, as with all prior pilots).
 
 **Status:** Draft ready for the user to attach the 8 images.
+
+## 18. Images Attached, Alt Text Set (2026-09-30)
+
+- User attached all 8 images manually in the editor. First REST check found only 5/8 present (Cases 5, 7, 8 missing) — this was a save-timing false alarm, not a real gap: a re-check moments later confirmed all 8 images present with 0 placeholders remaining, matching the expected filenames (case1_result through case8_refresh_result).
+- Alt text set for all 8 media items (IDs 58–65) via `wp/v2/media/{id}`, and separately applied to the inline `<img>` tags in post content via a filename-keyword regex replace (matching the pattern used for Pilots C/E/G).
+- Post status remained `draft` throughout.
+
+**Status:** content, images, alt text, and Rank Math SEO meta all complete for post ID 56. Only remaining step is the user's explicit publish decision (per standing project rule — Cowork does not publish; the user clicks Publish in the already-open editor, and Cowork's own REST publish calls are blocked by the platform's Production Deploy safety classifier).
