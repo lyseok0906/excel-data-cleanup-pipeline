@@ -289,3 +289,13 @@ Following the same pattern as Pilots C/E/G: title, content, category and Rank Ma
 - Post status remained `draft` throughout.
 
 **Status:** content, images, alt text, and Rank Math SEO meta all complete for post ID 56. Only remaining step is the user's explicit publish decision (per standing project rule — Cowork does not publish; the user clicks Publish in the already-open editor, and Cowork's own REST publish calls are blocked by the platform's Production Deploy safety classifier).
+
+## 19. Published (2026-09-30)
+
+User clicked Publish in the already-open editor after final review. Confirmed via REST:
+
+- **Status:** publish
+- **URL:** https://cleansheethq.com/power-query-remove-duplicates/
+- **Published:** 2026-09-30T06:23:04 (GMT)
+
+**This is Blog B's fourth live article** (after Pilots G, C, E). Pilot A is complete end-to-end: fixture (including the extended troubleshooting in §12–§15) → 8 screenshots captured and verified → WordPress Draft → images/alt text/SEO → published.
